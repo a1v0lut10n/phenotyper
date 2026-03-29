@@ -1,0 +1,5 @@
+// Missing namespace declaration
+CSVFile:
+    header: required string,
+    @(header)
+;

@@ -1,0 +1,15 @@
+namespace aivolution/format/csv;
+
+type Visibility: [public, protected, private];
+
+CSVFile:
+    header: required CSVLine,
+    footer: optional CSVLine,
+    lines: required CSVLines,
+    tags: required Tags*,
+    eol: required string,
+    @(header), @eol,
+    @join(lines, eol),
+    @ifset(footer) { @eol, @(footer) },
+    @ifnotempty(tags) { @eol, @join(tags, ", ") }
+;

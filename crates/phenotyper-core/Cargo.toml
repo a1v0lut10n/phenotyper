@@ -1,0 +1,20 @@
+[package]
+name = "phenotyper-core"
+description = "Core compiler library for the Phenotyper structural artifact definition language"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+rustemo.workspace = true
+thiserror.workspace = true
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+
+[features]
+default = []
+json-diagnostics = ["dep:serde", "dep:serde_json"]
+
+[build-dependencies]
+rustemo-compiler = "0.9.1"
