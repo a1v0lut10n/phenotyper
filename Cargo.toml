@@ -1,0 +1,29 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/phenotyper-core",
+    "crates/phenotyper-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+rust-version = "1.85"
+
+[workspace.dependencies]
+# Parser runtime
+rustemo = "0.9.1"
+
+# Error handling
+thiserror = "2"
+
+# Serialization (for JSON diagnostics)
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Internal crates
+phenotyper-core = { path = "crates/phenotyper-core" }

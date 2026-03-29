@@ -1,0 +1,6 @@
+namespace aivolution/format/broken;
+
+CSVFile:
+    header required string,
+    @(header)
+;

@@ -1,0 +1,22 @@
+namespace aivolution/format/csv;
+
+CSVRecord plural CSVRecords:
+    field: required {int64, real64, string, date, time, datetime},
+        @(field)
+;
+
+CSVLine plural CSVLines:
+    records: CSVRecords,
+    separator: required string,
+    @join(records, separator)
+;        
+
+CSVFile plural CSVFiles:
+    header: CSVLine,
+    lines: CSVLines,
+    separator: required string,
+            
+    @(header),
+    @join(lines, @eol),
+        @eol
+;

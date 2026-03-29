@@ -1,0 +1,21 @@
+namespace aivolution/format/csv;
+
+type ScalarValue: {int64, real64, string, date, time, datetime};
+
+CSVFieldValue plural CSVFieldValues:
+    value: required ScalarValue,
+    @(value)
+;
+
+CSVLine plural CSVLines:
+    fields: required CSVFieldValues,
+    separator: required string,
+    @join(fields, separator)
+;
+
+CSVFile:
+    header: required CSVLine,
+    lines: required CSVLines,
+    eol: required string,
+    @(header), @eol(eol), @join(lines, eol)
+;
