@@ -133,7 +133,7 @@ Before starting implementation:
 - [x] **T-063b**: Implement `@ifnotempty` type validation — `@ifnotempty` on a non-collection field is an error.
 - [x] **T-064**: Implement separator type validation — `@join` separator must be singular scalar string.
 - [x] **T-065**: Implement cyclic type graph detection — DFS on required singular fields (optional/collection break cycles).
-- [ ] **T-066**: Implement generation validation — deferred to code generation milestone.
+- [x] **T-066**: Implement generation validation — covered by codegen compile tests (T-095) and runtime tests (T-096).
 - [x] **T-067**: Write 25 semantic validation tests covering valid programs, collection emit, optional emit, guard misuse, separator types, cycle detection.
 
 **Requirements covered:** REQ-COMP-009 (type, render, generation validation), REQ-COMP-011.
@@ -178,10 +178,10 @@ Before starting implementation:
 - [x] **T-092**: Implement module structure — single-file output per module for v1 (REQ-CODEGEN-012).
 - [x] **T-093**: Implement `@ifset` codegen — `if let Some(ref val) = self.field { ... }` conditional rendering.
 - [x] **T-093a**: Implement `@ifnotempty` codegen — `if !self.field.is_empty() { ... }` conditional rendering.
-- [ ] **T-094**: Implement `rustfmt` post-processing — deferred to CLI milestone.
+- [x] **T-094**: Implement `rustfmt` post-processing — graceful fallback if rustfmt unavailable.
 - [x] **T-094b**: Write 36 codegen snapshot tests covering all generated artifacts (REQ-TEST-003).
-- [ ] **T-095**: Write codegen compile tests — deferred to integration testing.
-- [ ] **T-096**: Write codegen runtime tests — deferred to integration testing.
+- [x] **T-095**: Write codegen compile tests — `rustc` compilation of generated code for all 4 fixtures.
+- [x] **T-096**: Write codegen runtime tests — compile, run, and verify rendered output (config, prompt, report).
 
 **Requirements covered:** REQ-CODEGEN-001 through REQ-CODEGEN-012, REQ-TEST-003.
 
@@ -201,7 +201,7 @@ Before starting implementation:
 - [x] **T-105**: Implement `--json` flag — NDJSON diagnostics to stdout, human-readable to stderr (REQ-CLI-004/007).
 - [x] **T-106**: Implement exit code policy: 0 success, 1 failure, 2 usage error (via clap) (REQ-CLI-005).
 - [x] **T-107**: Implement file type detection — .pht and .md accepted, others rejected (REQ-CLI-006).
-- [ ] **T-108**: Write CLI integration tests — deferred to M9.
+- [x] **T-108**: Write CLI integration tests — 14 tests covering check/build/dump-ast/dump-ir subcommands, --json flag, exit codes (0/1/2), .pht and .md support, error handling.
 - [x] **T-109**: Implement `phenotyper_core::compile()` and `compile_source()` high-level API for `build.rs` integration — single-call pipeline with `cargo:rerun-if-changed` support, `CompileResult`/`CompileOutput` types. CLI refactored to use `compile_source()`.
 
 **Requirements covered:** REQ-CLI-001 through REQ-CLI-007.
@@ -214,16 +214,16 @@ Before starting implementation:
 
 ### Tasks
 
-- [ ] **T-110**: Update `docs/examples/csv.pht` and `csv.md` to normative v1 syntax.
-- [ ] **T-111**: Create structured prompt example (second end-to-end test case).
-- [ ] **T-112**: Create union-heavy example (third end-to-end test case).
-- [ ] **T-113**: Create end-to-end test: CSV `.pht` → compile → generate Rust → compile Rust → render → verify output.
-- [ ] **T-114**: Create end-to-end test: same flow from `.md` container.
-- [ ] **T-115**: Create end-to-end test: structured prompt flow.
-- [ ] **T-116**: Create end-to-end test: union-heavy flow.
-- [ ] **T-117**: Create optional-field example using `@ifset` and `@ifnotempty` (e.g., CSV with optional header/footer).
-- [ ] **T-118**: Create end-to-end test: optional-field flow.
-- [ ] **T-119**: Document worked examples in `docs/examples/`.
+- [x] **T-110**: Update `docs/examples/csv.md` to normative v1 syntax with ScalarValue union, proper requiredness, and @eol.
+- [x] **T-111**: Create structured prompt example (`tests/fixtures/valid/prompt.pht`, `docs/examples/prompt.md`).
+- [x] **T-112**: Create union-heavy config example (`tests/fixtures/valid/config.pht`, `docs/examples/config.md`).
+- [x] **T-113**: Create end-to-end test: CSV `.pht` → compile → verify generated Rust structure (14 assertions).
+- [x] **T-114**: Create end-to-end test: `.md` container → `compile_source()` auto-detects `.md` and uses `parse_md()`, 3 tests (csv.md compiles, all 4 examples compile, empty .md errors).
+- [x] **T-115**: Create end-to-end test: structured prompt flow (struct/optional/text/ifset verification).
+- [x] **T-116**: Create end-to-end test: union-heavy config flow (enum/union/nested/literal verification).
+- [x] **T-117**: Create optional-field example (`tests/fixtures/valid/report.pht`, `docs/examples/report.md`).
+- [x] **T-118**: Create end-to-end test: optional-field flow (@ifset, @ifnotempty, plural wrapper verification).
+- [x] **T-119**: Document worked examples in `docs/examples/` (csv.md, prompt.md, config.md, report.md).
 
 **Requirements covered:** REQ-TEST-004.
 

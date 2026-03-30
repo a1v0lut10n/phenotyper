@@ -1,0 +1,26 @@
+namespace aivolution/format/config;
+
+type Visibility: [public, private, internal];
+
+type ConfigValue: {string, int64, real64, bool};
+
+ConfigEntry plural ConfigEntries:
+    key: required string,
+    value: required ConfigValue,
+    visibility: required Visibility,
+    @(key), " = ", @(value), " [", @(visibility), "]"
+;
+
+ConfigSection plural ConfigSections:
+    name: required string,
+    entries: required ConfigEntries,
+    "[", @(name), "]\n",
+    @join(entries, "\n")
+;
+
+ConfigFile:
+    title: required string,
+    sections: required ConfigSections,
+    "# ", @(title), "\n\n",
+    @join(sections, "\n\n")
+;

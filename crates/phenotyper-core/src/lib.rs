@@ -103,8 +103,13 @@ pub fn compile(source_path: impl AsRef<Path>, out_dir: impl AsRef<Path>) -> Comp
 pub fn compile_source(source: &str, file_name: &str, out_dir: Option<&Path>) -> CompileResult {
     let mut warnings = Vec::new();
 
-    // Parse
-    let ast = parser::parse_pht(source, file_name)?;
+    // Parse — auto-detect .md vs .pht by file extension
+    let is_md = file_name.ends_with(".md");
+    let ast = if is_md {
+        parser::parse_md(source, file_name)?
+    } else {
+        parser::parse_pht(source, file_name)?
+    };
 
     // Symbol resolution
     let (table, sym_diags) = symbol::build(&ast, file_name);

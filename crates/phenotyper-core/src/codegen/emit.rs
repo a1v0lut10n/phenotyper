@@ -145,8 +145,9 @@ fn emit_type_alias(alias: &TypeAlias, out: &mut String) {
             out.push_str("        match self {\n");
             for member in members {
                 let (variant, _) = union_variant_info(member);
+                let render_expr = union_variant_render(member);
                 out.push_str(&format!(
-                    "            {rust_name}::{variant}(val) => val.render_into(out),\n"
+                    "            {rust_name}::{variant}(val) => {render_expr},\n"
                 ));
             }
             out.push_str("        }\n");
@@ -462,9 +463,9 @@ fn emit_plural_wrapper(
     let plural_rust_name = naming::to_rust_type_name(plural_name);
     let builder_name = naming::to_builder_name(plural_name);
 
-    // Struct
+    // Struct (with Default derive for builder compatibility)
     out.push_str(&format!(
-        "#[derive(Debug, Clone)]\npub struct {plural_rust_name} {{\n\
+        "#[derive(Debug, Clone, Default)]\npub struct {plural_rust_name} {{\n\
          \x20\x20\x20\x20items: Vec<{singular_rust_name}>,\n\
          }}\n\n"
     ));

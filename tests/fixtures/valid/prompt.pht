@@ -1,0 +1,17 @@
+namespace aivolution/ai/prompt;
+
+PromptSection plural PromptSections:
+    heading: required string,
+    body: required string,
+    "## ", @(heading), "\n\n", @(body)
+;
+
+SystemPrompt:
+    role: required string,
+    instructions: required PromptSections,
+    context: optional string,
+    "# System Prompt\n\n",
+    "You are ", @(role), ".\n\n",
+    @join(instructions, "\n\n"),
+    @ifset(context) { "\n\n---\n\n", @(context) }
+;
