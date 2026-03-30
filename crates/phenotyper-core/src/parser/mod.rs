@@ -18,7 +18,7 @@ rustemo::rustemo_mod!(phenotyper, "/src/parser");
 
 #[allow(unused)]
 #[rustfmt::skip]
-mod phenotyper_actions;
+pub mod phenotyper_actions;
 
 use rustemo::Parser;
 
