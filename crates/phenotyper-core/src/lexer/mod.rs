@@ -12,7 +12,7 @@
 mod source_map;
 mod token;
 
-pub use source_map::{extract_pht_blocks, SourceBlock, SourceMap};
+pub use source_map::{SourceBlock, SourceMap, extract_pht_blocks};
 pub use token::{Keyword, Span, SpannedToken, Token};
 
 use crate::diagnostic::{Diagnostic, Severity};
@@ -200,9 +200,7 @@ impl<'a> LexerState<'a> {
             '*' => self.single_char_token(Token::Star, start_line, start_col),
 
             // --- Identifiers and keywords ---
-            c if is_ident_start(c) => {
-                Ok(Some(self.lex_identifier(start_line, start_col)))
-            }
+            c if is_ident_start(c) => Ok(Some(self.lex_identifier(start_line, start_col))),
 
             // --- Unknown character ---
             _ => Err(self.error_at(format!("unexpected character: '{ch}'"))),
@@ -301,9 +299,9 @@ impl<'a> LexerState<'a> {
                             return Err(self.error_at(format!("unknown escape sequence: '\\{c}'")));
                         }
                         None => {
-                            return Err(self.error_at(
-                                "unterminated escape sequence at end of input",
-                            ));
+                            return Err(
+                                self.error_at("unterminated escape sequence at end of input")
+                            );
                         }
                     }
                 }
@@ -314,9 +312,7 @@ impl<'a> LexerState<'a> {
                         file: self.file.clone(),
                         line: start_line,
                         col: start_col,
-                        explanation: Some(
-                            "string literals cannot span multiple lines".to_string(),
-                        ),
+                        explanation: Some("string literals cannot span multiple lines".to_string()),
                         suggestion: Some(
                             "use \\n for newlines, or close the string before the line break"
                                 .to_string(),

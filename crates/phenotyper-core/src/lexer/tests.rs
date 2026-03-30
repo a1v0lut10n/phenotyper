@@ -87,10 +87,7 @@ fn simple_string_literal() {
     let tokens = lex_ok(r#""hello world""#);
     assert_eq!(
         tokens,
-        vec![
-            Token::StringLiteral("hello world".to_string()),
-            Token::Eof,
-        ]
+        vec![Token::StringLiteral("hello world".to_string()), Token::Eof,]
     );
 }
 
@@ -99,10 +96,7 @@ fn string_escape_sequences() {
     let tokens = lex_ok(r#""\"\\\n\r\t""#);
     assert_eq!(
         tokens,
-        vec![
-            Token::StringLiteral("\"\\\n\r\t".to_string()),
-            Token::Eof,
-        ]
+        vec![Token::StringLiteral("\"\\\n\r\t".to_string()), Token::Eof,]
     );
 }
 

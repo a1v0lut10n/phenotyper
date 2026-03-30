@@ -149,10 +149,7 @@ Some text.
 "#;
         let (blocks, map) = extract_pht_blocks(md);
         assert_eq!(blocks.len(), 1);
-        assert_eq!(
-            blocks[0].text,
-            "namespace aivolution/format/csv;"
-        );
+        assert_eq!(blocks[0].text, "namespace aivolution/format/csv;");
         assert_eq!(blocks[0].md_start_line, 4); // line 4 in the .md
         assert_eq!(map.source, "namespace aivolution/format/csv;");
         assert_eq!(map.original_line(1), 4);

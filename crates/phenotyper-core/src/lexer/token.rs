@@ -46,19 +46,19 @@ pub enum Token {
     Keyword(Keyword),
 
     // --- Punctuation ---
-    Colon,      // :
-    Semicolon,  // ;
-    Comma,      // ,
-    LeftBrace,  // {
-    RightBrace, // }
+    Colon,        // :
+    Semicolon,    // ;
+    Comma,        // ,
+    LeftBrace,    // {
+    RightBrace,   // }
     LeftBracket,  // [
     RightBracket, // ]
-    LeftParen,  // (
-    RightParen, // )
-    At,         // @
-    Plus,       // +
-    Star,       // *
-    Slash,      // /
+    LeftParen,    // (
+    RightParen,   // )
+    At,           // @
+    Plus,         // +
+    Star,         // *
+    Slash,        // /
 
     // --- Sentinel ---
     Eof,
