@@ -1,0 +1,25 @@
+namespace aivolution/format/report;
+
+Tag plural Tags:
+    label: required string,
+    @(label)
+;
+
+ReportLine plural ReportLines:
+    content: required string,
+    @(content)
+;
+
+Report:
+    title: required string,
+    subtitle: optional string,
+    lines: required ReportLines,
+    tags: required Tags*,
+    footer: optional string,
+    "# ", @(title), "\n",
+    @ifset(subtitle) { "## ", @(subtitle), "\n" },
+    "\n",
+    @join(lines, "\n"),
+    @ifnotempty(tags) { "\n\n---\nTags: ", @join(tags, ", ") },
+    @ifset(footer) { "\n\n---\n", @(footer) }
+;
