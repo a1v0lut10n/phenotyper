@@ -83,15 +83,15 @@ Before starting implementation:
 
 ### Tasks
 
-- [ ] **T-040**: Define symbol table data structure (REQ-COMP-008).
-- [ ] **T-041**: Implement symbol collection pass — walk AST, register all type names (singular, plural, enum, alias).
-- [ ] **T-042**: Implement duplicate name detection: singular collisions, plural collisions, cross-collisions.
-- [ ] **T-043**: Implement field-name uniqueness checking per type.
-- [ ] **T-044**: Implement type-reference resolution — resolve named types to `TypeId`, `EnumId`, or `PrimitiveType`.
-- [ ] **T-045**: Implement field-reference resolution in directives — resolve field names within the current type.
-- [ ] **T-046**: Implement `uses` import resolution (bring external symbols into scope).
-- [ ] **T-047**: Implement shadowing detection (local shadows import → warning).
-- [ ] **T-048**: Write symbol/name resolution tests (REQ-TEST-002 scenarios).
+- [x] **T-040**: Define symbol table data structure (REQ-COMP-008): `TypeId`, `EnumId`, `AliasId`, `FieldId`, `Symbol`, `SymbolTable`.
+- [x] **T-041**: Implement symbol collection pass — walk AST, register all type names (singular, plural, enum, alias).
+- [x] **T-042**: Implement duplicate name detection: singular collisions, plural collisions, cross-collisions, singular=plural.
+- [x] **T-043**: Implement field-name uniqueness checking per type + enum member uniqueness.
+- [x] **T-044**: Implement type-reference resolution — resolve named types against symbol table.
+- [x] **T-045**: Implement field-reference resolution in directives — resolve field names in `@()`, directive args, block bodies.
+- [ ] **T-046**: Implement `uses` import resolution (deferred to multi-file milestone).
+- [ ] **T-047**: Implement shadowing detection (deferred to multi-file milestone).
+- [x] **T-048**: Write symbol/name resolution tests — 28 tests covering valid programs, duplicates, and unknown references.
 
 **Requirements covered:** REQ-COMP-008, REQ-COMP-009 (symbol validation), REQ-COMP-012.
 
