@@ -9,7 +9,7 @@
 //! - Line and block comments (discarded)
 //! - Whitespace (discarded)
 
-mod source_map;
+pub mod source_map;
 mod token;
 
 pub use source_map::{SourceBlock, SourceMap, extract_pht_blocks};
