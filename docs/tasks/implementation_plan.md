@@ -193,15 +193,16 @@ Before starting implementation:
 
 ### Tasks
 
-- [ ] **T-100**: Set up `clap` command structure with `check` and `build` subcommands (REQ-CLI-002).
-- [ ] **T-101**: Implement `check` — run full pipeline except code generation, emit diagnostics.
-- [ ] **T-102**: Implement `build --out <path>` — run full pipeline including code generation, write output.
-- [ ] **T-103**: Implement `dump-ast` subcommand (REQ-CLI-003).
-- [ ] **T-104**: Implement `dump-ir` subcommand (REQ-CLI-003).
-- [ ] **T-105**: Implement `--json` flag for machine-readable diagnostics (REQ-CLI-004).
-- [ ] **T-106**: Implement exit code policy: 0 success, 1 failure, 2 usage error (REQ-CLI-005).
-- [ ] **T-107**: Implement file type detection by extension (REQ-CLI-006).
-- [ ] **T-108**: Write CLI integration tests.
+- [x] **T-100**: Set up `clap` command structure with `check` and `build` subcommands (REQ-CLI-002).
+- [x] **T-101**: Implement `check` — run parse → symbols → IR → semantic, emit diagnostics, exit 0/1.
+- [x] **T-102**: Implement `build --out <path>` — full pipeline + codegen, write namespace-based output directory.
+- [x] **T-103**: Implement `dump-ast` subcommand — parse and print AST via `Debug` (REQ-CLI-003).
+- [x] **T-104**: Implement `dump-ir` subcommand — full pipeline to IR, print via `Debug` (REQ-CLI-003).
+- [x] **T-105**: Implement `--json` flag — NDJSON diagnostics to stdout, human-readable to stderr (REQ-CLI-004/007).
+- [x] **T-106**: Implement exit code policy: 0 success, 1 failure, 2 usage error (via clap) (REQ-CLI-005).
+- [x] **T-107**: Implement file type detection — .pht and .md accepted, others rejected (REQ-CLI-006).
+- [ ] **T-108**: Write CLI integration tests — deferred to M9.
+- [x] **T-109**: Implement `phenotyper_core::compile()` and `compile_source()` high-level API for `build.rs` integration — single-call pipeline with `cargo:rerun-if-changed` support, `CompileResult`/`CompileOutput` types. CLI refactored to use `compile_source()`.
 
 **Requirements covered:** REQ-CLI-001 through REQ-CLI-007.
 
@@ -237,6 +238,7 @@ Before starting implementation:
 - [ ] **T-120**: Write `docs/howto/authoring_phenotypes.md` — guide for writing phenotype definitions.
 - [ ] **T-121**: Write `docs/howto/using_generated_code.md` — guide for using generated Rust APIs.
 - [ ] **T-122**: Write `docs/howto/compiler_usage.md` — guide for using the CLI.
+- [ ] **T-122a**: Write `docs/howto/build_rs_integration.md` — guide for using `phenotyper_core::compile()` from a downstream project's `build.rs` (similar to prost-build, rustemo).
 - [ ] **T-123**: Finalize README with accurate installation and usage instructions.
 - [ ] **T-124**: Run `cargo clippy` and address all warnings.
 - [ ] **T-125**: Performance sanity check: profile compile and render for the CSV example.
