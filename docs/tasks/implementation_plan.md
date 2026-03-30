@@ -42,13 +42,13 @@ Before starting implementation:
 
 ### Tasks
 
-- [ ] **T-010**: Define the `Token` enum covering all v1 tokens (REQ-COMP-003).
-- [ ] **T-011**: Define `Span` type for source-position tracking (file, start line/col, end line/col).
-- [ ] **T-012**: Implement lexer for pure `.pht` input.
-- [ ] **T-013**: Implement string literal lexing with escape sequences (`\"`, `\\`, `\n`, `\r`, `\t`).
-- [ ] **T-014**: Implement comment handling (line `//` and block `/* */`).
-- [ ] **T-015**: Implement Markdown `.md` source extraction — extract `pht` fenced blocks and build source map.
-- [ ] **T-016**: Write lexer unit tests: valid tokens, edge cases, malformed input.
+- [x] **T-010**: Define the `Token` enum covering all v1 tokens (REQ-COMP-003).
+- [x] **T-011**: Define `Span` type for source-position tracking (file, start line/col, end line/col).
+- [x] **T-012**: Implement lexer for pure `.pht` input.
+- [x] **T-013**: Implement string literal lexing with escape sequences (`\"`, `\\`, `\n`, `\r`, `\t`).
+- [x] **T-014**: Implement comment handling (line `//` and block `/* */`).
+- [x] **T-015**: Implement Markdown `.md` source extraction — extract `pht` fenced blocks and build source map.
+- [x] **T-016**: Write lexer unit tests: valid tokens, edge cases, malformed input.
 
 **Requirements covered:** REQ-COMP-002, REQ-COMP-003, REQ-LANG-016 through REQ-LANG-020.
 
