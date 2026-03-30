@@ -103,17 +103,17 @@ Before starting implementation:
 
 ### Tasks
 
-- [ ] **T-050**: Define IR data types in Rust (REQ-COMP-006): `PhenotypeModule`, `PhenotypeType`, `FieldDef`, `ValueType`, `RenderNode`, `EnumType`.
-- [ ] **T-051**: Implement AST-to-IR lowering pass.
-- [ ] **T-052**: Implement directive canonicalization — `@(field)` → `Emit(field_id)`.
-- [ ] **T-053**: Implement `@eol` lowering (to `Eol(field_id)` or `Emit(field_id)` per DEC-002).
-- [ ] **T-054**: Implement union flattening.
-- [ ] **T-055**: Implement primitive type recognition (resolve identifiers like `string`, `int64` to `PrimitiveType`).
-- [ ] **T-056**: Implement singular/plural normalization — store plural companion on `PhenotypeType`, lower plural field references to `UserPlural { collection_of }`.
-- [ ] **T-057**: Implement cardinality normalization — `+` → `Cardinality::OneOrMore`.
-- [ ] **T-058**: Implement `@ifset` lowering — `@ifset(field) { body }` → `IfSet { field: FieldId, body: Vec<RenderNode> }`.
-- [ ] **T-059**: Implement `@ifnotempty` lowering — `@ifnotempty(field) { body }` → `IfNotEmpty { field: FieldId, body: Vec<RenderNode> }`.
-- [ ] **T-060-a**: Write IR normalization tests (including block directive lowering).
+- [x] **T-050**: Define IR data types in Rust (REQ-COMP-006): `PhenotypeModule`, `PhenotypeType`, `FieldDef`, `ValueType`, `RenderNode`, `EnumType`, `TypeAlias`, `SeparatorExpr`.
+- [x] **T-051**: Implement AST-to-IR lowering pass.
+- [x] **T-052**: Implement directive canonicalization — `@(field)` → `Emit(field_id)`, string literals → `Text`.
+- [x] **T-053**: Implement `@eol` lowering — bare `@eol` → `Eol { field: None }`, `@eol(f)` → `Eol { field: Some(id) }`.
+- [x] **T-054**: Implement union flattening (nested unions recursively flattened).
+- [x] **T-055**: Implement primitive type recognition — `string`, `int64`, etc. → `PrimitiveType`.
+- [x] **T-056**: Implement singular/plural normalization — plural ref → `UserPlural { collection_of }`.
+- [x] **T-057**: Implement cardinality normalization — `+` → `OneOrMore`, `*` → `ZeroOrMore`, default `One`.
+- [x] **T-058**: Implement `@ifset` lowering — `@ifset(field) { body }` → `IfSet { field, body }`.
+- [x] **T-059**: Implement `@ifnotempty` lowering — `@ifnotempty(field) { body }` → `IfNotEmpty { field, body }`.
+- [x] **T-060-a**: Write 24 IR normalization tests (CSV fixture, primitives, cardinality, plural/singular, enums, aliases, unions, all directive types, block bodies).
 
 **Requirements covered:** REQ-COMP-006, REQ-COMP-007.
 
