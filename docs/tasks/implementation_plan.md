@@ -163,25 +163,25 @@ Before starting implementation:
 
 ### Tasks
 
-- [ ] **T-080**: Implement Rust type mapping: `PrimitiveType` → Rust type, `ValueType` → Rust type reference.
-- [ ] **T-081**: Implement singular struct generation (REQ-CODEGEN-002).
-- [ ] **T-082**: Implement plural wrapper struct generation with `from_vec`, `into_vec`, `as_slice`, `iter`, `From`/`Into` (REQ-CODEGEN-003).
-- [ ] **T-083**: Implement `Render` trait and trait implementations for singular types (REQ-CODEGEN-006).
-- [ ] **T-084**: Implement `render` on plural wrappers — join logic per phenotype definition.
-- [ ] **T-085**: Implement builder struct generation for singular types (REQ-CODEGEN-004).
-- [ ] **T-086**: Implement builder struct generation for plural types (`push`, `extend`).
-- [ ] **T-087**: Implement `BuildError` enum generation (REQ-CODEGEN-005).
-- [ ] **T-088**: Implement `build()` runtime validation: missing required fields, empty `OneOrMore` collections.
-- [ ] **T-089**: Implement union type → Rust enum generation (REQ-CODEGEN-007).
-- [ ] **T-090**: Implement namespace-level enum → Rust enum generation (REQ-CODEGEN-008).
-- [ ] **T-091**: Implement naming strategy: DSL names → idiomatic Rust names (REQ-CODEGEN-009).
-- [ ] **T-092**: Implement module structure: namespace path → Rust module hierarchy (REQ-CODEGEN-012).
-- [ ] **T-093**: Implement `@ifset` codegen — generate `if let Some(val) = self.field { ... }` conditional rendering blocks.
-- [ ] **T-093a**: Implement `@ifnotempty` codegen — generate `if !self.field.is_empty() { ... }` conditional rendering blocks.
-- [ ] **T-094**: Implement `rustfmt` post-processing for generated code.
-- [ ] **T-094**: Write codegen snapshot tests — compare generated Rust against golden files (REQ-TEST-003).
-- [ ] **T-095**: Write codegen compile tests — ensure generated code compiles.
-- [ ] **T-096**: Write codegen runtime tests — ensure rendered output matches expectations.
+- [x] **T-080**: Implement Rust type mapping: `PrimitiveType` → Rust type, `ValueType` → resolved Rust type via module context.
+- [x] **T-081**: Implement singular struct generation with public fields (REQ-CODEGEN-002).
+- [x] **T-082**: Implement plural wrapper struct generation with `new`, `from_vec`, `into_vec`, `as_slice`, `iter`, `From`/`Into` (REQ-CODEGEN-003).
+- [x] **T-083**: Implement `Render` trait definition and trait implementations for singular types (REQ-CODEGEN-006).
+- [x] **T-084**: Implement `render` on plural wrappers — join logic per phenotype definition.
+- [x] **T-085**: Implement builder struct generation for singular types with `build()` validation (REQ-CODEGEN-004).
+- [x] **T-086**: Implement builder struct generation for plural types (`push`, `extend`, `build`).
+- [x] **T-087**: Implement `BuildError` enum with `MissingField` and `CardinalityViolation` (REQ-CODEGEN-005).
+- [x] **T-088**: Implement `build()` runtime validation: missing required fields, empty `OneOrMore` collections.
+- [x] **T-089**: Implement union type → Rust enum generation with `Render` delegation (REQ-CODEGEN-007).
+- [x] **T-090**: Implement namespace-level enum → Rust enum generation with original-spelling rendering (REQ-CODEGEN-008).
+- [x] **T-091**: Implement naming strategy: DSL names → idiomatic Rust PascalCase (CSVLine→CsvLine) (REQ-CODEGEN-009).
+- [x] **T-092**: Implement module structure — single-file output per module for v1 (REQ-CODEGEN-012).
+- [x] **T-093**: Implement `@ifset` codegen — `if let Some(ref val) = self.field { ... }` conditional rendering.
+- [x] **T-093a**: Implement `@ifnotempty` codegen — `if !self.field.is_empty() { ... }` conditional rendering.
+- [ ] **T-094**: Implement `rustfmt` post-processing — deferred to CLI milestone.
+- [x] **T-094b**: Write 36 codegen snapshot tests covering all generated artifacts (REQ-TEST-003).
+- [ ] **T-095**: Write codegen compile tests — deferred to integration testing.
+- [ ] **T-096**: Write codegen runtime tests — deferred to integration testing.
 
 **Requirements covered:** REQ-CODEGEN-001 through REQ-CODEGEN-012, REQ-TEST-003.
 
