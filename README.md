@@ -728,68 +728,60 @@ Phenotyper's name-resolution model is intentionally simple.
 
 ## Current status
 
-Phenotyper is currently a language/compiler design project with a fairly detailed v1 direction.
+Phenotyper v1 is a **working compiler** with a complete pipeline:
 
-The current design includes:
-- file-level namespaces
-- `uses` imports
-- reusable named types
-- namespace-level enums
-- singular/plural phenotype declarations
-- render expressions
-- Markdown and pure source containers
-- exact source-position diagnostics across both source forms
-- a Rust-oriented code-generation story
-- generated builder-pattern APIs for valid artifact construction
+| Component | Status |
+|-----------|--------|
+| Lexer & source map | ✅ Tokenizer with markdown extraction |
+| Parser | ✅ Rustemo-based PEG grammar |
+| Symbol table | ✅ Two-pass name resolution |
+| Intermediate representation | ✅ Normalized IR with validation |
+| Semantic validation | ✅ Type, render, and generation checks |
+| Diagnostics | ✅ Rich human-readable and JSON output |
+| Code generation | ✅ Idiomatic Rust with rustfmt |
+| CLI | ✅ `check`, `build`, `dump-ast`, `dump-ir` |
+| Build integration | ✅ `phenotyper_core::compile()` API |
+| Test suite | ✅ 219 tests (unit, e2e, CLI, compile, runtime) |
 
-The next major implementation work is likely to focus on:
-- grammar stabilization
-- AST and IR design
-- Rustemo-based parsing
-- builder and renderer generation
-- test fixtures across both `.md` and `.pht`
+### Quick start
+
+```bash
+# Install from source
+cargo install --path crates/phenotyper-cli
+
+# Check a source file
+phenotyper check path/to/file.pht
+
+# Generate Rust code
+phenotyper build path/to/file.pht --out generated/
+
+# Use from build.rs
+# See docs/howto/build_rs_integration.md
+```
+
+### Documentation
+
+- [Authoring phenotypes](docs/howto/authoring_phenotypes.md) — DSL syntax guide
+- [Using generated code](docs/howto/using_generated_code.md) — Rust API guide
+- [Compiler usage](docs/howto/compiler_usage.md) — CLI reference
+- [Build script integration](docs/howto/build_rs_integration.md) — `build.rs` guide
+- [Worked examples](docs/examples/) — CSV, prompt, config, report
 
 ---
 
 ## Project goals
 
-Phenotyper is aiming to become a strong foundation for:
+Phenotyper is a foundation for:
 - structured prompt engineering
 - robust artifact generation for AI systems
 - typed textual interfaces
 - reusable format definitions
 - eventually, round-trippable artifact specifications
 
-The long-term idea is simple:
-
-> define the shape of an artifact once, then generate the tooling needed to create it correctly.
-
----
-
-## Repository direction
-
-This repository is expected to evolve toward:
-- the Phenotyper language spec
-- a Rust compiler implementation
-- worked examples
-- generated Rust output samples
-- benchmarks against representative templating approaches
-- documentation for authoring phenotype definitions
-
----
-
-## Contributing ideas
-
-Good next discussions for the project include:
-- exact grammar refinements
-- type and enum naming rules
-- render-expression normalization
-- code-generation API shape
-- parser-generation roadmap
-- benchmark design for artifact rendering performance
+> Define the shape of an artifact once, then generate the tooling needed to create it correctly.
 
 ---
 
 ## License
 
-TBD.
+Apache-2.0

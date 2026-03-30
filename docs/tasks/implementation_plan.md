@@ -235,14 +235,14 @@ Before starting implementation:
 
 ### Tasks
 
-- [ ] **T-120**: Write `docs/howto/authoring_phenotypes.md` — guide for writing phenotype definitions.
-- [ ] **T-121**: Write `docs/howto/using_generated_code.md` — guide for using generated Rust APIs.
-- [ ] **T-122**: Write `docs/howto/compiler_usage.md` — guide for using the CLI.
-- [ ] **T-122a**: Write `docs/howto/build_rs_integration.md` — guide for using `phenotyper_core::compile()` from a downstream project's `build.rs` (similar to prost-build, rustemo).
-- [ ] **T-123**: Finalize README with accurate installation and usage instructions.
-- [ ] **T-124**: Run `cargo clippy` and address all warnings.
-- [ ] **T-125**: Performance sanity check: profile compile and render for the CSV example.
-- [ ] **T-126**: License selection and SPDX header.
+- [x] **T-120**: Write `docs/howto/authoring_phenotypes.md` — DSL syntax, types, fields, render expressions, best practices.
+- [x] **T-121**: Write `docs/howto/using_generated_code.md` — structs, builders, rendering, plural wrappers, unions, enums, error handling.
+- [x] **T-122**: Write `docs/howto/compiler_usage.md` — installation, subcommands, flags, file types, exit codes, examples.
+- [x] **T-122a**: Write `docs/howto/build_rs_integration.md` — `phenotyper_core::compile()` from `build.rs` with complete project example.
+- [x] **T-123**: Finalize README — updated status table, quick start, documentation links, license.
+- [x] **T-124**: Run `cargo clippy` — clean, no warnings.
+- [x] **T-125**: Performance sanity check — ~0.6s per file (process startup dominated), reasonable for v1.
+- [x] **T-126**: License: Apache-2.0, SPDX headers on all source files, LICENSE file added.
 
 **Requirements covered:** Cross-cutting.
 
