@@ -146,12 +146,12 @@ Before starting implementation:
 
 ### Tasks
 
-- [ ] **T-070**: Define `Diagnostic` struct: severity, summary, span, explanation, optional fix suggestion.
-- [ ] **T-071**: Define `DiagnosticSeverity` enum: Error, Warning, Info.
-- [ ] **T-072**: Integrate diagnostics throughout parser, symbol, and semantic phases (ensure source spans propagate).
-- [ ] **T-073**: Implement human-readable diagnostic formatter (stderr).
-- [ ] **T-074**: Implement JSON diagnostic formatter (for `--json` flag).
-- [ ] **T-075**: Write diagnostic tests — verify correct messages, source locations, and suggestions (REQ-TEST-005).
+- [x] **T-070**: Define `Diagnostic` struct with builder-pattern constructors (`.at()`, `.with_explanation()`, `.with_suggestion()`).
+- [x] **T-071**: Define `Severity` enum (Error, Warning, Info) with Display, Ord, and `.label()`.
+- [x] **T-072**: Integrate diagnostics — all phases produce `Diagnostic` values with structured fields. Source spans propagated from parser.
+- [x] **T-073**: Implement human-readable formatter (`format_human`) — GCC-style header, `-->` location, `= note:` explanation, `= help:` suggestion. `format_human_all` with summary line.
+- [x] **T-074**: Implement JSON formatter (`format_json`) — NDJSON-compatible, no serde dependency, proper escaping. `format_json_all` for batch output.
+- [x] **T-075**: Write 24 diagnostic tests — severity, constructors, Display, human formatter, JSON formatter, summary, error counting, utility functions.
 
 **Requirements covered:** REQ-COMP-010, REQ-CLI-007.
 
