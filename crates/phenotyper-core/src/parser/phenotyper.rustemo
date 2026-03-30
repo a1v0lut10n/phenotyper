@@ -1,0 +1,153 @@
+// Phenotyper v1 Grammar
+// ====================
+// LR(1) grammar for the Phenotyper structural artifact definition language.
+// Parsed by Rustemo (rustemo.rs) — generates parser + default AST types.
+
+// ---------------------------------------------------------------------------
+// Top-level structure
+// ---------------------------------------------------------------------------
+
+File: ns=NamespaceDecl uses=UsesDecl* decls=TopLevelDecl*;
+
+NamespaceDecl: 'namespace' path=NamespacePath ';';
+
+NamespacePath: Ident+[Slash];
+
+UsesDecl: 'uses' path=NamespacePath ';';
+
+TopLevelDecl: TypeDecl | TypeDef;
+
+// ---------------------------------------------------------------------------
+// Type declarations (aliases and enums)
+// ---------------------------------------------------------------------------
+
+TypeDecl: 'type' name=Ident ':' body=TypeDeclBody ';';
+
+TypeDeclBody: alias=TypeExpr {Alias}
+            | '[' members=EnumMembers ']' {Enum}
+            ;
+
+EnumMembers: first=Ident ',' rest=EnumMembers {Cons}
+           | last=Ident {Single}
+           ;
+
+// ---------------------------------------------------------------------------
+// Phenotype (type definition) declarations
+// ---------------------------------------------------------------------------
+
+TypeDef: name=Ident plural_clause=PluralClause? ':' items=BodyItem+[Comma] ';';
+
+PluralClause: 'plural' plural_name=Ident;
+
+// ---------------------------------------------------------------------------
+// Body items (fields and render expressions)
+// ---------------------------------------------------------------------------
+
+BodyItem: field=FieldDecl {Field}
+        | render=RenderExpr {Render}
+        ;
+
+FieldDecl: name=Ident ':' req=Requiredness type_expr=TypeExpr;
+
+Requiredness: 'required' {Req} | 'optional' {Opt};
+
+// ---------------------------------------------------------------------------
+// Type expressions
+// ---------------------------------------------------------------------------
+
+TypeExpr: base=TypeName card=CardinalityOp {Cardinalized}
+        | '{' members=TypeName+[Comma] '}' {Union}
+        | name=TypeName {Simple}
+        ;
+
+CardinalityOp: '+' {Plus} | '*' {Star};
+
+TypeName: name=Ident {UserDefined}
+        | 'string' {String}
+        | 'int64' {Int64}
+        | 'real64' {Real64}
+        | 'bool' {Bool}
+        | 'date' {Date}
+        | 'time' {Time}
+        | 'datetime' {DateTime}
+        ;
+
+// ---------------------------------------------------------------------------
+// Render expressions
+// ---------------------------------------------------------------------------
+
+RenderExpr: '@' name=Ident suffix=DirectiveSuffix {Directive}
+          | '@' name=Ident {BareDirective}
+          | '@' '(' ref_name=Ident ')' {FieldRef}
+          | value=StringLiteral {StringLit}
+          ;
+
+DirectiveSuffix: '(' args=Argument+[Comma] ')' block=BlockBody? {WithArgs}
+               | '(' ')' block=BlockBody? {EmptyParen}
+               ;
+
+BlockBody: '{' items=RenderExpr+[Comma] '}';
+
+Argument: val=Ident {IdentArg}
+        | val=StringLiteral {LiteralArg}
+        ;
+
+// ---------------------------------------------------------------------------
+// Layout: whitespace and comments
+// ---------------------------------------------------------------------------
+
+Layout: LayoutItem*;
+LayoutItem: WS | Comment;
+Comment: '/*' Corncs '*/' | CommentLine;
+Corncs: Cornc*;
+Cornc: Comment | NotComment | WS;
+
+// ---------------------------------------------------------------------------
+// Terminals
+// ---------------------------------------------------------------------------
+
+terminals
+
+Ident: /[A-Za-z_][A-Za-z0-9_]*/;
+StringLiteral: /"([^"\\]|\\.)*"/;
+
+// Language keywords
+Namespace: 'namespace';
+Uses: 'uses';
+Type: 'type';
+Plural: 'plural';
+Required: 'required';
+Optional: 'optional';
+
+// Primitive type keywords (lexically reserved per DEC-007)
+KwString: 'string';
+KwInt64: 'int64';
+KwReal64: 'real64';
+KwBool: 'bool';
+KwDate: 'date';
+KwTime: 'time';
+KwDatetime: 'datetime';
+
+// Punctuation
+Slash: '/';
+Comma: ',';
+Colon: ':';
+Semicolon: ';';
+At: '@';
+Plus: '+';
+Star: '*';
+LBrace: '{';
+RBrace: '}';
+LBracket: '[';
+RBracket: ']';
+LParen: '(';
+RParen: ')';
+
+// Block comment delimiters
+BlockCommentOpen: '/*';
+BlockCommentClose: '*/';
+
+// Layout terminals
+WS: /\s+/;
+CommentLine: /\/\/.*/;
+NotComment: /((\*[^\/])|[^\s*\/]|\/[^\*])+/;

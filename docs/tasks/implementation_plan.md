@@ -60,18 +60,18 @@ Before starting implementation:
 
 ### Tasks
 
-- [ ] **T-020**: Define Rustemo grammar file from the EBNF in REQ-COMP-004.
-- [ ] **T-021**: Define AST data types in Rust (REQ-COMP-005): `FileAst`, `NamespaceAst`, `UsesAst`, `TypeAliasAst`, `EnumDeclAst`, `TypeDefAst`, `FieldDeclAst`, `TypeExprAst`, `RenderExprAst`, `DirectiveAst`.
-- [ ] **T-022**: Implement Rustemo actions to produce the AST from parser output.
-- [ ] **T-023**: Implement `namespace` and `uses` parsing.
-- [ ] **T-024**: Implement `type Name: TypeExpr;` (type alias) parsing.
-- [ ] **T-025**: Implement `type Name: [member1, member2];` (enum) parsing.
-- [ ] **T-026**: Implement phenotype declaration parsing (singular and `plural` forms).
-- [ ] **T-027**: Implement field declaration parsing (`required`/`optional`, type expression with unions and cardinality `+`).
-- [ ] **T-028**: Implement render expression parsing: string literals, `@(field)`, `@name(args)`.
-- [ ] **T-029**: Implement block directive parsing: `@ifset(field) { ... }`, `@ifnotempty(field) { ... }` — including nested render bodies.
-- [ ] **T-030**: Write parser golden tests — valid inputs with expected AST snapshots.
-- [ ] **T-031**: Write parser negative tests — malformed syntax with expected error messages.
+- [x] **T-020**: Define Rustemo grammar file from the EBNF in REQ-COMP-004.
+- [x] **T-021**: Define AST data types (Rustemo-generated): `File`, `NamespaceDecl`, `UsesDecl`, `TypeDecl`, `TypeDef`, `FieldDecl`, `TypeExpr`, `RenderExpr`, `DirectiveSuffix`, etc.
+- [x] **T-022**: Implement Rustemo actions to produce the AST from parser output (auto-generated, customizable).
+- [x] **T-023**: Implement `namespace` and `uses` parsing.
+- [x] **T-024**: Implement `type Name: TypeExpr;` (type alias) parsing.
+- [x] **T-025**: Implement `type Name: [member1, member2];` (enum) parsing.
+- [x] **T-026**: Implement phenotype declaration parsing (singular and `plural` forms).
+- [x] **T-027**: Implement field declaration parsing (`required`/`optional`, type expression with unions and cardinality `+`/`*`).
+- [x] **T-028**: Implement render expression parsing: string literals, `@(field)`, `@name(args)`.
+- [x] **T-029**: Implement block directive parsing: `@ifset(field) { ... }`, `@ifnotempty(field) { ... }` — including nested render bodies.
+- [x] **T-030**: Write parser golden tests — 20 valid input tests.
+- [x] **T-031**: Write parser negative tests — 2 malformed syntax tests.
 
 **Requirements covered:** REQ-COMP-004, REQ-COMP-005, REQ-LANG-001 through REQ-LANG-020, REQ-TEST-001.
 
