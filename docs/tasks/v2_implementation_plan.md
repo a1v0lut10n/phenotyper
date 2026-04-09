@@ -212,11 +212,11 @@ then `?` operator (self-contained), then nesting (most complex).
 ### Phase 6: Integration
 
 - [x] **T-266**: Create `tests/fixtures/valid/nested_basic.pht` — minimal nesting test.
-- [ ] **T-267**: Create `tests/fixtures/valid/javaclass.pht` — v2 translation of
+- [x] **T-267**: Create `tests/fixtures/valid/javaclass.pht` — v2 translation of
   `docs/examples/javaclass.md` as a comprehensive nesting fixture.
-- [ ] **T-268**: Add e2e tests: parse → compile → `rustc` → runtime verify for
+- [x] **T-268**: Add e2e tests: parse → compile → `rustc` → runtime verify for
   nested phenotypes.
-- [ ] **T-269**: Add CLI integration tests for nested phenotype files.
+- [x] **T-269**: Add CLI integration tests for nested phenotype files.
 
 **Requirements covered:** v2 spec §2
 
