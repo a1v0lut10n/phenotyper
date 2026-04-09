@@ -32,7 +32,7 @@ pub fn collect_symbols(
     };
 
     // Process top-level declarations
-    if let Some(ref decls) = file_ast.decls {
+    if let Some(ref decls) = file_ast.ns.decls {
         for decl in decls {
             match decl {
                 ast::TopLevelDecl::TypeDecl(td) => {

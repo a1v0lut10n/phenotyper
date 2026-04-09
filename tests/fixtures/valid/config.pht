@@ -1,4 +1,4 @@
-namespace aivolution/format/config;
+aivolution/format/config:
 
 type Visibility: [public, private, internal];
 
@@ -24,3 +24,4 @@ ConfigFile:
     "# ", @(title), "\n\n",
     @join(sections, "\n\n")
 ;
+.

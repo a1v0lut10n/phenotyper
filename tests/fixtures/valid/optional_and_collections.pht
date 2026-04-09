@@ -1,4 +1,4 @@
-namespace aivolution/format/csv;
+aivolution/format/csv:
 
 type Visibility: [public, protected, private];
 
@@ -13,3 +13,4 @@ CSVFile:
     @ifset(footer) { @eol, @(footer) },
     @ifnotempty(tags) { @eol, @join(tags, ", ") }
 ;
+.

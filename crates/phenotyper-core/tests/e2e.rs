@@ -381,11 +381,12 @@ fn e2e_compile_error_on_invalid_source() {
 fn e2e_compile_error_on_missing_required_type() {
     let errors = compile_err(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required UnknownType,
             @(name)
         ;
+    .
     "#,
     );
     assert!(!errors.is_empty(), "expected symbol errors");

@@ -6,6 +6,12 @@
 //! - The actions file (`phenotyper_actions.rs`) is in the source tree
 //!   and can be manually customized.
 //!
+//! # v2 Changes
+//!
+//! The v2 grammar uses GLR parsing to handle the `Ident ':'` ambiguity
+//! between namespace scopes and phenotype definitions. The parser returns
+//! a `Forest` (SPPF) which is resolved to a single AST via `get_first_tree()`.
+//!
 //! # Usage
 //!
 //! ```ignore
@@ -13,8 +19,10 @@
 //! let ast = parser::parse_pht(source, "file.pht")?;
 //! ```
 
-// Include generated parser from OUT_DIR and actions from source tree
-rustemo::rustemo_mod!(phenotyper, "/src/parser");
+// Include generated parser from OUT_DIR and actions from source tree.
+// The unreachable_patterns allow is needed for a harmless pattern in
+// rustemo's GLR code generator output.
+rustemo::rustemo_mod!(#[allow(unreachable_patterns)] pub(crate) phenotyper, "/src/parser");
 
 #[allow(unused)]
 #[rustfmt::skip]
@@ -27,17 +35,36 @@ use crate::lexer::source_map::extract_pht_blocks;
 
 /// Parse a `.pht` source string into the Rustemo-generated AST.
 ///
-/// Returns `Ok(ast)` on success, or `Err(diagnostics)` on parse failure.
+/// Uses GLR parsing. Returns the first valid parse tree, or diagnostics on failure.
 pub fn parse_pht(source: &str, file: &str) -> Result<phenotyper_actions::File, Vec<Diagnostic>> {
     let parser = phenotyper::PhenotyperParser::new();
-    parser
+    let forest = parser
         .parse(source)
-        .map_err(|e| rustemo_error_to_diags(e, file))
+        .map_err(|e| rustemo_error_to_diags(e, file))?;
+
+    forest
+        .get_first_tree()
+        .map(|tree| tree.build(&mut phenotyper::DefaultBuilder::new()))
+        .ok_or_else(|| {
+            vec![Diagnostic {
+                severity: crate::diagnostic::Severity::Error,
+                summary: "GLR parse produced no valid trees".to_string(),
+                file: file.to_string(),
+                line: 0,
+                col: 0,
+                explanation: Some(
+                    "the parser could not disambiguate the input into a valid AST".to_string(),
+                ),
+                suggestion: None,
+            }]
+        })
 }
 
 /// Parse a `.md` source string by extracting `pht` blocks and parsing.
 ///
 /// Uses the [`SourceMap`] to remap line numbers in diagnostics.
+/// In v2, an implicit `.` is appended to the extracted source to close
+/// the namespace scope (the markdown container makes `.` optional).
 pub fn parse_md(markdown: &str, file: &str) -> Result<phenotyper_actions::File, Vec<Diagnostic>> {
     let (_blocks, source_map) = extract_pht_blocks(markdown);
 
@@ -55,8 +82,11 @@ pub fn parse_md(markdown: &str, file: &str) -> Result<phenotyper_actions::File, 
         }]);
     }
 
+    // T-217: Append implicit '.' for v2 namespace scope termination in .md containers
+    let source_with_dot = format!("{}\n.", source_map.source);
+
     let parser = phenotyper::PhenotyperParser::new();
-    parser.parse(&source_map.source).map_err(|e| {
+    let forest = parser.parse(&source_with_dot).map_err(|e| {
         let mut diags = rustemo_error_to_diags(e, file);
         // Remap line numbers via source map
         for diag in &mut diags {
@@ -65,7 +95,24 @@ pub fn parse_md(markdown: &str, file: &str) -> Result<phenotyper_actions::File, 
             }
         }
         diags
-    })
+    })?;
+
+    forest
+        .get_first_tree()
+        .map(|tree| tree.build(&mut phenotyper::DefaultBuilder::new()))
+        .ok_or_else(|| {
+            vec![Diagnostic {
+                severity: crate::diagnostic::Severity::Error,
+                summary: "GLR parse produced no valid trees".to_string(),
+                file: file.to_string(),
+                line: 0,
+                col: 0,
+                explanation: Some(
+                    "the parser could not disambiguate the input into a valid AST".to_string(),
+                ),
+                suggestion: None,
+            }]
+        })
 }
 
 /// Convert a Rustemo error into our Diagnostic type.

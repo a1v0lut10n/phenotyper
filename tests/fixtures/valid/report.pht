@@ -1,4 +1,4 @@
-namespace aivolution/format/report;
+aivolution/format/report:
 
 Tag plural Tags:
     label: required string,
@@ -23,3 +23,4 @@ Report:
     @ifnotempty(tags) { "\n\n---\nTags: ", @join(tags, ", ") },
     @ifset(footer) { "\n\n---\n", @(footer) }
 ;
+.

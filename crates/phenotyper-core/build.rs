@@ -8,6 +8,8 @@ fn main() {
         // Keep actions file in source tree (customizable, committed)
         // Parser goes to OUT_DIR (regenerated, not committed)
         .actions_in_source_tree()
+        // Use GLR parsing for v2 ambiguous namespace/phenotype grammar
+        .parser_algo(rustemo_compiler::ParserAlgo::GLR)
         // Prefer shifts over empty reductions to resolve common LR conflicts
         .prefer_shifts_over_empty(true);
 

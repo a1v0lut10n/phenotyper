@@ -13,7 +13,7 @@ rust-version = "1.85"
 
 [workspace.dependencies]
 # Parser runtime
-rustemo = "0.9.1"
+rustemo = { version = "0.9.1", features = ["glr"] }
 
 # Error handling
 thiserror = "2"

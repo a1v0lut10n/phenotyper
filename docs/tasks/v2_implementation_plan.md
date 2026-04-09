@@ -22,9 +22,9 @@ then `?` operator (self-contained), then nesting (most complex).
 
 ## Prerequisites
 
-- [ ] **T-200**: Review Rustemo GLR documentation and confirm API for enabling GLR mode.
-- [ ] **T-201**: Verify Rustemo GLR handles the `Ident ':'` fork/prune pattern with a minimal prototype.
-- [ ] **T-202**: Update existing v1 fixture files and examples to serve as regression baselines.
+- [x] **T-200**: Review Rustemo GLR documentation and confirm API for enabling GLR mode.
+- [x] **T-201**: Verify Rustemo GLR handles the `Ident ':'` fork/prune pattern with a minimal prototype.
+- [x] **T-202**: Update existing v1 fixture files and examples to serve as regression baselines.
 
 ---
 
@@ -36,16 +36,16 @@ then `?` operator (self-contained), then nesting (most complex).
 
 ### Phase 1: Grammar & Parser
 
-- [ ] **T-210**: Switch Rustemo parser mode from LR(1) to GLR in `build.rs` configuration.
-- [ ] **T-211**: Update `phenotyper.rustemo` grammar:
+- [x] **T-210**: Switch Rustemo parser mode from LR(1) to GLR in `build.rs` configuration.
+- [x] **T-211**: Update `phenotyper.rustemo` grammar:
   - Replace `File: ns=NamespaceDecl ...` with `File: ns=NamespaceScope | decls=TopLevelDecl+;`
   - Add `NamespaceScope: path=NamespacePath ':' uses=UsesDecl* decls=TopLevelDecl* '.';`
   - Remove `NamespaceDecl: 'namespace' path=NamespacePath ';';`
   - Add `.` as `Dot` terminal.
   - Remove `namespace` from reserved keywords.
-- [ ] **T-212**: Update `phenotyper_actions.rs` — adapt AST builder actions for the new
+- [x] **T-212**: Update `phenotyper_actions.rs` — adapt AST builder actions for the new
   `File` and `NamespaceScope` productions.
-- [ ] **T-213**: Add parser unit tests for:
+- [x] **T-213**: Add parser unit tests for:
   - Multi-segment namespace: `aivolution/format/csv: ... .`
   - Single-segment namespace: `csv: ... .` (GLR disambiguation)
   - Namespace with `uses` declarations
@@ -54,33 +54,29 @@ then `?` operator (self-contained), then nesting (most complex).
 
 ### Phase 2: AST & IR
 
-- [ ] **T-214**: Update `ast.rs` — adapt `File` AST node to carry `NamespaceScope`
+- [x] **T-214**: Update `ast.rs` — adapt `File` AST node to carry `NamespaceScope`
   or bare declarations.
-- [ ] **T-215**: Update `ir/lower.rs` — adapt IR lowering to extract namespace path
+- [x] **T-215**: Update `ir/lower.rs` — adapt IR lowering to extract namespace path
   from the new AST shape.
-- [ ] **T-216**: Update `symbol/collect.rs` and `symbol/resolve.rs` — adapt symbol
+- [x] **T-216**: Update `symbol/collect.rs` and `symbol/resolve.rs` — adapt symbol
   table to the new namespace extraction.
 
 ### Phase 3: Markdown Container
 
-- [ ] **T-217**: Update `lexer/source_map.rs` — the markdown extractor must append
+- [x] **T-217**: Update `lexer/source_map.rs` — the markdown extractor must append
   an implicit `.` token at the end of extracted blocks (with synthetic span).
-- [ ] **T-218**: Add parser tests for `.md` containers without trailing `.` block.
+- [x] **T-218**: Add parser tests for `.md` containers without trailing `.` block.
 
 ### Phase 4: Migration & Compatibility
 
-- [ ] **T-219**: Implement `phenotyper migrate` CLI subcommand:
-  - Reads v1 `.pht`/`.md` files
-  - Replaces `namespace path;` with `path:`
-  - Appends `.` at end of `.pht` files
-  - Writes output to stdout or in-place with `--in-place`
-- [ ] **T-220**: Migrate all existing fixture files and examples to v2 syntax.
-- [ ] **T-221**: Update e2e and CLI tests for v2 namespace syntax.
+- [ ] **T-219**: Implement `phenotyper migrate` CLI subcommand (deferred to M14).
+- [x] **T-220**: Migrate all existing fixture files and examples to v2 syntax.
+- [x] **T-221**: Update e2e and CLI tests for v2 namespace syntax.
 
 ### Phase 5: Cleanup
 
-- [ ] **T-222**: Remove `namespace` keyword from lexer reserved words and token enum.
-- [ ] **T-223**: Run full test suite — confirm all tests pass with new syntax.
+- [x] **T-222**: Remove `namespace` keyword from lexer reserved words and token enum.
+- [x] **T-223**: Run full test suite — confirm all tests pass with new syntax.
 
 **Requirements covered:** v2 spec §1
 

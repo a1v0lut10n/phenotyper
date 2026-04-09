@@ -227,7 +227,7 @@ fn cli_dump_ast_outputs_debug() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("File {"), "expected AST Debug output");
     assert!(
-        stdout.contains("NamespaceDecl"),
+        stdout.contains("NamespaceScope"),
         "expected namespace in AST"
     );
 }

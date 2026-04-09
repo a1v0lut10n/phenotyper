@@ -1,4 +1,4 @@
-namespace aivolution/ai/prompt;
+aivolution/ai/prompt:
 
 PromptSection plural PromptSections:
     heading: required string,
@@ -15,3 +15,4 @@ SystemPrompt:
     @join(instructions, "\n\n"),
     @ifset(context) { "\n\n---\n\n", @(context) }
 ;
+.
