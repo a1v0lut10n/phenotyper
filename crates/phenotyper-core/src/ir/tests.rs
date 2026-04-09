@@ -554,3 +554,133 @@ fn csv_fixture_render_nodes() {
         }
     );
 }
+
+// ─── ? operator desugaring ──────────────────────────────────────────────────
+
+#[test]
+fn conditional_ref_optional_desugars_to_ifset() {
+    let module = lower_ok(
+        r#"
+        test/types:
+        Record:
+            name: required string,
+            desc: optional string,
+            @(name),
+            @(desc)?
+        ;
+    .
+    "#,
+    );
+    let pt = &module.types[0];
+    // @(desc)? on optional → IfSet { field, body: [Emit(field)] }
+    let node = &pt.render[1]; // second render node
+    match node {
+        RenderNode::IfSet { field, body } => {
+            assert_eq!(
+                pt.fields.iter().find(|f| f.id == *field).unwrap().name,
+                "desc"
+            );
+            assert_eq!(body.len(), 1);
+            assert!(matches!(body[0], RenderNode::Emit(_)));
+        }
+        other => panic!("expected IfSet, got {other:?}"),
+    }
+}
+
+#[test]
+fn conditional_ref_collection_desugars_to_ifnotempty() {
+    let module = lower_ok(
+        r#"
+        test/types:
+        Record:
+            tags: required string*,
+            @(tags)?
+        ;
+    .
+    "#,
+    );
+    let pt = &module.types[0];
+    match &pt.render[0] {
+        RenderNode::IfNotEmpty { field, body } => {
+            assert_eq!(
+                pt.fields.iter().find(|f| f.id == *field).unwrap().name,
+                "tags"
+            );
+            assert_eq!(body.len(), 1);
+            assert!(matches!(body[0], RenderNode::Emit(_)));
+        }
+        other => panic!("expected IfNotEmpty, got {other:?}"),
+    }
+}
+
+#[test]
+fn conditional_ref_block_desugars_with_body() {
+    let module = lower_ok(
+        r###"
+        test/types:
+        Record:
+            subtitle: optional string,
+            @(subtitle)? { "## ", @(subtitle) }
+        ;
+    .
+    "###,
+    );
+    let pt = &module.types[0];
+    match &pt.render[0] {
+        RenderNode::IfSet { body, .. } => {
+            assert_eq!(body.len(), 2);
+            assert!(matches!(body[0], RenderNode::Text(_)));
+            assert!(matches!(body[1], RenderNode::Emit(_)));
+        }
+        other => panic!("expected IfSet with body, got {other:?}"),
+    }
+}
+
+#[test]
+fn conditional_join_desugars_to_ifnotempty_join() {
+    let module = lower_ok(
+        r#"
+        test/types:
+        Record:
+            tags: required string*,
+            @join(tags, ", ")?
+        ;
+    .
+    "#,
+    );
+    let pt = &module.types[0];
+    match &pt.render[0] {
+        RenderNode::IfNotEmpty { field, body } => {
+            assert_eq!(
+                pt.fields.iter().find(|f| f.id == *field).unwrap().name,
+                "tags"
+            );
+            assert_eq!(body.len(), 1);
+            assert!(matches!(body[0], RenderNode::Join { .. }));
+        }
+        other => panic!("expected IfNotEmpty wrapping Join, got {other:?}"),
+    }
+}
+
+#[test]
+fn conditional_join_block_desugars_with_body() {
+    let module = lower_ok(
+        r#"
+        test/types:
+        Record:
+            tags: required string*,
+            @join(tags, ", ")? { "Tags: ", @join(tags, ", ") }
+        ;
+    .
+    "#,
+    );
+    let pt = &module.types[0];
+    match &pt.render[0] {
+        RenderNode::IfNotEmpty { body, .. } => {
+            assert_eq!(body.len(), 2);
+            assert!(matches!(body[0], RenderNode::Text(_)));
+            assert!(matches!(body[1], RenderNode::Join { .. }));
+        }
+        other => panic!("expected IfNotEmpty with body, got {other:?}"),
+    }
+}

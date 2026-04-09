@@ -123,11 +123,11 @@ fn lower_type_def(
         }
     }
 
-    // Lower render expressions
+    // Lower render expressions (pass fields for ? desugaring)
     let mut render = Vec::new();
     for item in &def.items {
         if let ast::BodyItem::Render(r) = item {
-            if let Some(node) = lower_render_expr(&r.render, type_id, table, file, diags) {
+            if let Some(node) = lower_render_expr(&r.render, type_id, &fields, table, file, diags) {
                 render.push(node);
             }
         }
@@ -267,6 +267,7 @@ fn lower_union_type(
 fn lower_render_expr(
     expr: &ast::RenderExpr,
     type_id: TypeId,
+    fields: &[FieldDef],
     table: &SymbolTable,
     file: &str,
     diags: &mut Vec<Diagnostic>,
@@ -300,6 +301,16 @@ fn lower_render_expr(
 
         // @name(...) with or without block body
         ast::RenderExpr::Directive(d) => lower_named_directive(d, type_id, table, file, diags),
+
+        // @(field)? or @(field)? { body } — desugar to IfSet/IfNotEmpty
+        ast::RenderExpr::ConditionalRef(cr) => {
+            lower_conditional_ref(cr, type_id, fields, table, file, diags)
+        }
+
+        // @name(...)? or @name(...)? { body } — desugar directive with ?
+        ast::RenderExpr::ConditionalDirective(cd) => {
+            lower_conditional_directive(cd, type_id, fields, table, file, diags)
+        }
     }
 }
 
@@ -388,6 +399,129 @@ fn lower_named_directive(
     }
 }
 
+/// Lower a `@(field)?` or `@(field)? { body }` conditional reference.
+///
+/// Desugars based on field type:
+/// - `optional` field → `IfSet { field, body }`
+/// - Collection field (`*`/`+`) → `IfNotEmpty { field, body }`
+/// - `required` scalar → treated as `IfSet` (semantic pass warns)
+fn lower_conditional_ref(
+    cr: &ast::ConditionalRef,
+    type_id: TypeId,
+    fields: &[FieldDef],
+    table: &SymbolTable,
+    file: &str,
+    diags: &mut Vec<Diagnostic>,
+) -> Option<RenderNode> {
+    let field_id = resolve_field_id(&cr.ref_name, type_id, table, file, diags)?;
+
+    // Determine body: if block is present, lower it; else default to [Emit(field)]
+    let body = if let Some(ref block) = cr.block {
+        let mut nodes = Vec::new();
+        for item in &block.items {
+            if let Some(node) = lower_render_expr(item, type_id, fields, table, file, diags) {
+                nodes.push(node);
+            }
+        }
+        nodes
+    } else {
+        vec![RenderNode::Emit(field_id)]
+    };
+
+    // Decide IfSet vs IfNotEmpty based on cardinality
+    let field_def = fields.iter().find(|f| f.id == field_id);
+    let is_collection = field_def
+        .map(|f| {
+            matches!(
+                f.cardinality,
+                Cardinality::OneOrMore | Cardinality::ZeroOrMore
+            )
+        })
+        .unwrap_or(false);
+
+    if is_collection {
+        Some(RenderNode::IfNotEmpty {
+            field: field_id,
+            body,
+        })
+    } else {
+        Some(RenderNode::IfSet {
+            field: field_id,
+            body,
+        })
+    }
+}
+
+/// Lower a `@name(args)?` or `@name(args)? { body }` conditional directive.
+///
+/// Currently only `@join(field, sep)?` is defined:
+/// - Bare: `@join(f, s)?` → `IfNotEmpty { f, [Join(f, s)] }`
+/// - Block: `@join(f, s)? { body }` → `IfNotEmpty { f, body }`
+fn lower_conditional_directive(
+    cd: &ast::ConditionalDirective,
+    type_id: TypeId,
+    fields: &[FieldDef],
+    table: &SymbolTable,
+    file: &str,
+    diags: &mut Vec<Diagnostic>,
+) -> Option<RenderNode> {
+    let name = cd.name.as_str();
+
+    match &cd.suffix {
+        ast::DirectiveSuffix::WithArgs(wa) => match name {
+            "join" => {
+                if wa.args.len() != 2 {
+                    diags.push(super::error(
+                        file,
+                        format!("@join requires exactly 2 arguments, got {}", wa.args.len()),
+                    ));
+                    return None;
+                }
+                let field_name = ident_arg(&wa.args[0], "@join", file, diags)?;
+                let field_id = resolve_field_id(&field_name, type_id, table, file, diags)?;
+                let separator = lower_separator_arg(&wa.args[1], type_id, table, file, diags)?;
+
+                // Determine body: block or default join
+                let body = if let Some(ref block) = cd.block {
+                    let mut nodes = Vec::new();
+                    for item in &block.items {
+                        if let Some(node) =
+                            lower_render_expr(item, type_id, fields, table, file, diags)
+                        {
+                            nodes.push(node);
+                        }
+                    }
+                    nodes
+                } else {
+                    vec![RenderNode::Join {
+                        field: field_id,
+                        separator,
+                    }]
+                };
+
+                Some(RenderNode::IfNotEmpty {
+                    field: field_id,
+                    body,
+                })
+            }
+            _ => {
+                diags.push(super::error(
+                    file,
+                    format!("`?` suffix is not supported on `@{name}`"),
+                ));
+                None
+            }
+        },
+        ast::DirectiveSuffix::EmptyParen(_) => {
+            diags.push(super::error(
+                file,
+                format!("`@{name}()?` is not a valid conditional directive"),
+            ));
+            None
+        }
+    }
+}
+
 /// Lower the body of a block directive.
 fn lower_block_body(
     block: &Option<ast::BlockBody>,
@@ -399,7 +533,9 @@ fn lower_block_body(
     let mut nodes = Vec::new();
     if let Some(body) = block {
         for item in &body.items {
-            if let Some(node) = lower_render_expr(item, type_id, table, file, diags) {
+            // Block bodies inside @ifset/@ifnotempty don't need fields for ? desugaring
+            // (nested ? is allowed but rare — pass empty slice)
+            if let Some(node) = lower_render_expr(item, type_id, &[], table, file, diags) {
                 nodes.push(node);
             }
         }

@@ -456,3 +456,83 @@ fn error_eol_with_non_string_field() {
         "@eol field `count` in type `Record` must be a string",
     );
 }
+
+// ─── ? suffix operator ──────────────────────────────────────────────────────
+
+#[test]
+fn valid_conditional_ref_optional() {
+    // @(optional_field)? is valid sugar for @ifset
+    validate_ok(
+        r#"
+        test/types:
+        Record:
+            name: required string,
+            desc: optional string,
+            @(name),
+            @(desc)?
+        ;
+    .
+    "#,
+    );
+}
+
+#[test]
+fn valid_conditional_ref_optional_block() {
+    // @(optional_field)? { body } is valid
+    validate_ok(
+        r###"
+        test/types:
+        Record:
+            subtitle: optional string,
+            @(subtitle)? { "## ", @(subtitle) }
+        ;
+    .
+    "###,
+    );
+}
+
+#[test]
+fn valid_conditional_ref_collection() {
+    // @(collection)? desugars to @ifnotempty — collection emit inside guard is ok
+    validate_ok(
+        r#"
+        test/types:
+        Record:
+            tags: required string*,
+            @(tags)? { @join(tags, ", ") }
+        ;
+    .
+    "#,
+    );
+}
+
+#[test]
+fn valid_conditional_join() {
+    // @join(tags, ", ")? is valid sugar for @ifnotempty { @join }
+    validate_ok(
+        r#"
+        test/types:
+        Record:
+            tags: required string*,
+            @join(tags, ", ")?
+        ;
+    .
+    "#,
+    );
+}
+
+#[test]
+fn error_conditional_ref_on_required() {
+    // @(required_field)? desugars to IfSet, which is an error for non-optional fields
+    expect_error(
+        r#"
+        test/types:
+        Record:
+            name: required string,
+            @(name)?
+        ;
+    .
+    "#,
+        "@ifset on non-optional field `name`",
+    );
+}

@@ -316,6 +316,79 @@ Record:
     );
 }
 
+// --- ? suffix operator tests (v2) ---
+
+#[test]
+fn parse_conditional_ref_bare() {
+    let source = r#"
+        test/format:
+        Record:
+            subtitle: optional string,
+            @(subtitle)?
+        ;
+    .
+    "#;
+    let result = parse_pht(source, "test.pht");
+    assert!(result.is_ok(), "bare conditional ref failed: {result:?}");
+}
+
+#[test]
+fn parse_conditional_ref_block() {
+    let source = r###"
+        test/format:
+        Record:
+            subtitle: optional string,
+            @(subtitle)? { "## ", @(subtitle) }
+        ;
+    .
+    "###;
+    let result = parse_pht(source, "test.pht");
+    assert!(result.is_ok(), "block conditional ref failed: {result:?}");
+}
+
+#[test]
+fn parse_conditional_join_bare() {
+    let source = r#"
+        test/format:
+        Record:
+            tags: required string*,
+            @join(tags, ", ")?
+        ;
+    .
+    "#;
+    let result = parse_pht(source, "test.pht");
+    assert!(result.is_ok(), "bare conditional join failed: {result:?}");
+}
+
+#[test]
+fn parse_conditional_join_block() {
+    let source = r#"
+        test/format:
+        Record:
+            tags: required string*,
+            @join(tags, ", ")? { "Tags: ", @join(tags, ", ") }
+        ;
+    .
+    "#;
+    let result = parse_pht(source, "test.pht");
+    assert!(result.is_ok(), "block conditional join failed: {result:?}");
+}
+
+#[test]
+fn parse_conditional_ref_on_required() {
+    // ? on required should parse (semantic pass warns)
+    let source = r#"
+        test/format:
+        Record:
+            name: required string,
+            @(name)?
+        ;
+    .
+    "#;
+    let result = parse_pht(source, "test.pht");
+    assert!(result.is_ok(), "? on required should parse: {result:?}");
+}
+
 // --- Negative tests ---
 
 #[test]

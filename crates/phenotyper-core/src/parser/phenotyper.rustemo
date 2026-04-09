@@ -83,8 +83,10 @@ TypeName: name=Ident {UserDefined}
 // Render expressions
 // ---------------------------------------------------------------------------
 
-RenderExpr: '@' name=Ident suffix=DirectiveSuffix {Directive}
+RenderExpr: '@' name=Ident suffix=DirectiveSuffix '?' block=BlockBody? {ConditionalDirective}
+          | '@' name=Ident suffix=DirectiveSuffix {Directive}
           | '@' name=Ident {BareDirective}
+          | '@' '(' ref_name=Ident ')' '?' block=BlockBody? {ConditionalRef}
           | '@' '(' ref_name=Ident ')' {FieldRef}
           | value=StringLiteral {StringLit}
           ;
@@ -140,6 +142,7 @@ Comma: ',';
 Colon: ':';
 Semicolon: ';';
 Dot: '.';
+Question: '?';
 At: '@';
 Plus: '+';
 Star: '*';
