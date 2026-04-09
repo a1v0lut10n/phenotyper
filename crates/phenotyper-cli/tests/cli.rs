@@ -295,3 +295,135 @@ fn cli_check_missing_file_arg_exits_2() {
         "expected exit code 2 for missing arg"
     );
 }
+
+// ─── nested phenotype files (M13) ──────────────────────────────────────────
+
+#[test]
+fn cli_check_nested_basic_exits_0() {
+    let output = Command::new(phenotyper_bin())
+        .args(["check", fixture("nested_basic.pht").to_str().unwrap()])
+        .output()
+        .expect("failed to run phenotyper");
+
+    assert_eq!(output.status.code(), Some(0), "expected exit code 0");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("✓"), "expected success marker");
+    assert!(stderr.contains("no errors"), "expected 'no errors'");
+}
+
+#[test]
+fn cli_check_javaclass_exits_0() {
+    let output = Command::new(phenotyper_bin())
+        .args(["check", fixture("javaclass.pht").to_str().unwrap()])
+        .output()
+        .expect("failed to run phenotyper");
+
+    assert_eq!(output.status.code(), Some(0), "expected exit code 0");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("✓"), "expected success marker");
+}
+
+#[test]
+fn cli_build_nested_basic_creates_output() {
+    let out_dir = std::env::temp_dir().join("phenotyper-cli-nested-test");
+    let _ = std::fs::remove_dir_all(&out_dir);
+
+    let output = Command::new(phenotyper_bin())
+        .args([
+            "build",
+            fixture("nested_basic.pht").to_str().unwrap(),
+            "--out",
+            out_dir.to_str().unwrap(),
+        ])
+        .output()
+        .expect("failed to run phenotyper");
+
+    assert_eq!(output.status.code(), Some(0), "expected exit code 0");
+
+    // Verify output file exists
+    let mod_rs = out_dir.join("test/nested/mod.rs");
+    assert!(mod_rs.exists(), "expected mod.rs to be created");
+
+    let content = std::fs::read_to_string(&mod_rs).unwrap();
+    assert!(
+        content.contains("pub struct Parent"),
+        "expected Parent struct"
+    );
+    assert!(
+        content.contains("pub struct Child"),
+        "expected Child struct"
+    );
+
+    let _ = std::fs::remove_dir_all(&out_dir);
+}
+
+#[test]
+fn cli_build_javaclass_creates_output() {
+    let out_dir = std::env::temp_dir().join("phenotyper-cli-javaclass-test");
+    let _ = std::fs::remove_dir_all(&out_dir);
+
+    let output = Command::new(phenotyper_bin())
+        .args([
+            "build",
+            fixture("javaclass.pht").to_str().unwrap(),
+            "--out",
+            out_dir.to_str().unwrap(),
+        ])
+        .output()
+        .expect("failed to run phenotyper");
+
+    assert_eq!(output.status.code(), Some(0), "expected exit code 0");
+
+    let mod_rs = out_dir.join("java/types/mod.rs");
+    assert!(mod_rs.exists(), "expected mod.rs to be created");
+
+    let content = std::fs::read_to_string(&mod_rs).unwrap();
+    assert!(
+        content.contains("pub struct JavaClass"),
+        "expected JavaClass struct"
+    );
+    assert!(
+        content.contains("pub struct Constructor"),
+        "expected Constructor struct"
+    );
+    assert!(
+        content.contains("render_with_parent"),
+        "expected render_with_parent"
+    );
+
+    let _ = std::fs::remove_dir_all(&out_dir);
+}
+
+#[test]
+fn cli_dump_ast_nested_outputs_nested_type() {
+    let output = Command::new(phenotyper_bin())
+        .args(["dump-ast", fixture("nested_basic.pht").to_str().unwrap()])
+        .output()
+        .expect("failed to run phenotyper");
+
+    assert_eq!(output.status.code(), Some(0));
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("NestedType"),
+        "expected NestedType in AST debug"
+    );
+}
+
+#[test]
+fn cli_dump_ir_javaclass_shows_parent_ref() {
+    let output = Command::new(phenotyper_bin())
+        .args(["dump-ir", fixture("javaclass.pht").to_str().unwrap()])
+        .output()
+        .expect("failed to run phenotyper");
+
+    assert_eq!(output.status.code(), Some(0));
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("ParentFieldRef"),
+        "expected ParentFieldRef in IR"
+    );
+    assert!(
+        stdout.contains("parent_context: Some"),
+        "expected parent_context in IR"
+    );
+}

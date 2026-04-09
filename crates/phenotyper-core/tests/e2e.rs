@@ -632,3 +632,99 @@ fn t096_report_optional_fields_render() {
     // No footer
     assert!(!output.contains("---\n"), "footer should be absent");
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T-268: Nested phenotypes end-to-end
+// ═══════════════════════════════════════════════════════════════════════════
+
+#[test]
+fn e2e_nested_basic_compiles() {
+    let source = include_str!("../../../tests/fixtures/valid/nested_basic.pht");
+    let code = compile_ok(source);
+
+    // Both Parent and Child should be generated as flat types
+    assert!(code.contains("pub struct Parent"), "missing Parent struct");
+    assert!(code.contains("pub struct Child"), "missing Child struct");
+
+    // Both should have builders
+    assert!(
+        code.contains("pub struct ParentBuilder"),
+        "missing ParentBuilder"
+    );
+    assert!(
+        code.contains("pub struct ChildBuilder"),
+        "missing ChildBuilder"
+    );
+
+    // Both get Render impls
+    assert!(
+        code.contains("impl Render for Parent"),
+        "missing Parent Render"
+    );
+    assert!(
+        code.contains("impl Render for Child"),
+        "missing Child Render"
+    );
+}
+
+#[test]
+fn e2e_javaclass_compiles() {
+    let source = include_str!("../../../tests/fixtures/valid/javaclass.pht");
+    let code = compile_ok(source);
+
+    // Enum type
+    assert!(
+        code.contains("pub enum Visibility"),
+        "missing Visibility enum"
+    );
+
+    // Parent type structures
+    assert!(
+        code.contains("pub struct JavaClass"),
+        "missing JavaClass struct"
+    );
+    assert!(
+        code.contains("pub struct JavaClasses"),
+        "missing JavaClasses struct"
+    );
+
+    // Nested type structures (flattened)
+    assert!(
+        code.contains("pub struct Constructor"),
+        "missing Constructor struct"
+    );
+    assert!(
+        code.contains("pub struct Constructors"),
+        "missing Constructors struct"
+    );
+}
+
+#[test]
+fn e2e_javaclass_has_render_with_parent() {
+    let source = include_str!("../../../tests/fixtures/valid/javaclass.pht");
+    let code = compile_ok(source);
+
+    // Constructor references @(JavaClass/name) → generates render_with_parent
+    assert!(
+        code.contains("render_with_parent"),
+        "missing render_with_parent method"
+    );
+    assert!(
+        code.contains("parent: &JavaClass"),
+        "missing parent parameter type"
+    );
+    // The parent field access
+    assert!(code.contains("parent.name"), "missing parent.name access");
+}
+
+#[test]
+fn e2e_nested_basic_no_parent_context() {
+    let source = include_str!("../../../tests/fixtures/valid/nested_basic.pht");
+    let code = compile_ok(source);
+
+    // nested_basic has no parent-scoped refs, so no render_with_parent
+    assert!(
+        !code.contains("render_with_parent"),
+        "unexpected render_with_parent — nested_basic has no parent refs"
+    );
+}

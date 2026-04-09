@@ -136,9 +136,12 @@ fn resolve_render_expr(
 ) {
     match expr {
         ast::RenderExpr::FieldRef(fr) => {
-            // Use last segment of path for field resolution
-            if let Some(field_name) = fr.ref_path.segments.last() {
-                check_field_ref(field_name, type_name, type_id, table, file, diags);
+            // Multi-segment paths like @(Parent/field) reference parent fields;
+            // they're validated during IR lowering, not here.
+            if fr.ref_path.segments.len() == 1 {
+                if let Some(field_name) = fr.ref_path.segments.last() {
+                    check_field_ref(field_name, type_name, type_id, table, file, diags);
+                }
             }
         }
         ast::RenderExpr::Directive(d) => {
@@ -152,9 +155,11 @@ fn resolve_render_expr(
             // String literals have no references
         }
         ast::RenderExpr::ConditionalRef(cr) => {
-            // Resolve the field name in @(field)? — use last segment
-            if let Some(field_name) = cr.ref_path.segments.last() {
-                check_field_ref(field_name, type_name, type_id, table, file, diags);
+            // Multi-segment paths skip check (parent-scoped)
+            if cr.ref_path.segments.len() == 1 {
+                if let Some(field_name) = cr.ref_path.segments.last() {
+                    check_field_ref(field_name, type_name, type_id, table, file, diags);
+                }
             }
             // Resolve refs in optional block body
             if let Some(ref block) = cr.block {
