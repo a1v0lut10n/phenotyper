@@ -339,10 +339,8 @@ pub struct Constructor { ... }
 ```
 
 The parent reference `@(JavaClass/name)` generates a render method
-that takes the parent as a parameter, or captures it at construction
-time. Two strategies:
-
-#### Strategy A: Render-time parent parameter
+that takes the parent as a context parameter. This is **Strategy A:
+render-time parent parameter** (decided, see Q3).
 
 ```rust
 impl Constructor {
@@ -355,22 +353,26 @@ impl Constructor {
 }
 ```
 
-#### Strategy B: Constructor captures parent context
+**Rationale:** This avoids data duplication, keeps the generated
+types independent, and ensures consistency — the parent's current
+state is always reflected at render time. The trade-off is a
+slightly more complex render API for nested types, but the parent
+parameter is always available in the containing phenotype's own
+render body, where the nested type is instantiated and rendered.
+
+The containing phenotype's `Render` impl passes `&self` as the
+parent when rendering its nested children:
 
 ```rust
-pub struct Constructor {
-    pub visibility: Visibility,
-    pub arguments: Arguments,
-    pub parent_name: String,  // Captured from JavaClass/name
+impl JavaClass {
+    fn render_into(&self, out: &mut String) {
+        // ...
+        for ctor in &self.constructors {
+            ctor.render_with_parent(self, out);  // self = &JavaClass
+        }
+    }
 }
 ```
-
-> [!IMPORTANT]
-> **Recommended: Strategy A** — render-time parent parameter. This
-> avoids data duplication and keeps the generated types independent.
-> The trade-off is a slightly more complex render API for nested
-> types. Strategy B is simpler but creates coupling and potential
-> inconsistency if the parent changes.
 
 ### 2.8 Name Visibility
 
@@ -530,6 +532,50 @@ items: required Tags+,
 ```
 
 Same treatment — warning, but generates correctly.
+
+### 3.9 `?` on `@join`
+
+The `?` suffix is also valid on `@join` directives:
+
+```pht
+@join(tags, ", ")?
+```
+
+This is sugar for:
+
+```pht
+@ifnotempty(tags) { @join(tags, ", ") }
+```
+
+The semantics follow naturally — `@join` operates on a collection
+field, and `?` makes it conditional on non-emptiness. This is the
+most common use case for `@ifnotempty` and the `?` form is
+significantly more concise.
+
+#### Grammar
+
+The existing `Directive` render expression is extended:
+
+```
+RenderExpr: '@' name=Ident suffix=DirectiveSuffix '?' block=BlockBody? {ConditionalDirective}
+```
+
+When `?` appears without a block (bare form), the directive itself
+is the conditional body. When `?` is followed by a block, the
+entire block is conditional.
+
+#### Examples
+
+```pht
+// Bare: join only if tags is non-empty
+@join(tags, ", ")?
+
+// Block: emit prefix + join only if tags is non-empty
+@join(tags, ", ")? { "Tags: ", @join(tags, ", ") }
+
+// With nested scope
+@join(JavaClass/constructors, "\n")?
+```
 
 ---
 
@@ -712,19 +758,28 @@ JavaClass plural JavaClasses:
 > extracted `pht` blocks serves as the namespace scope terminator.
 > In `.pht` files, the explicit `.` remains required. See §1.7.
 
-> [!WARNING]
-> ### Q3: Nested phenotype codegen strategy
-> Which strategy for parent-scoped field references in generated
-> code: render-time parameter, or captured context? This affects
-> the public API surface of generated types.
+> [!NOTE]
+> ### Q3: Nested phenotype codegen strategy ✅ RESOLVED
+> **Strategy A: render-time parent parameter.** Nested phenotypes
+> that reference parent fields via `@(Parent/field)` generate a
+> `render_with_parent(&self, parent: &Parent, out: &mut String)`
+> method. The containing phenotype passes `&self` as the parent
+> context. This avoids data duplication and ensures render-time
+> consistency. See §2.7.
 
 > [!NOTE]
-> ### Q4: Nested type declarations
-> Should `type` declarations (enums, unions, aliases) also be
-> nestable inside phenotype bodies, or only phenotype (`TypeDef`)
-> declarations?
+> ### Q4: Nested type declarations ⏳ DEFERRED to v3
+> `type` declarations (enums, unions, aliases) remain
+> **namespace-level only** in v2. Nested phenotypes are already
+> the complex addition; nested types add modest value (most
+> enums/unions are shared across phenotypes) and would require
+> name-collision handling (e.g., prefix-mangling). If real usage
+> reveals demand, nested types can be added in v3 as a
+> backward-compatible extension.
 
 > [!NOTE]
-> ### Q5: `?` on `@join`
-> Should `@join(field, sep)?` be valid sugar for
-> `@ifnotempty(field) { @join(field, sep) }`?
+> ### Q5: `?` on `@join` ✅ RESOLVED
+> `@join(field, sep)?` is valid sugar for
+> `@ifnotempty(field) { @join(field, sep) }`. This is the most
+> common use case for `@ifnotempty` and the `?` form is
+> significantly more concise. See §3.9.
