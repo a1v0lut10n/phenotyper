@@ -4,7 +4,7 @@ This example demonstrates enum types, union type aliases, and nested
 plural structures for generating configuration files.
 
 ```pht
-namespace aivolution/format/config;
+aivolution/format/config:
 ```
 
 ## Visibility Enum

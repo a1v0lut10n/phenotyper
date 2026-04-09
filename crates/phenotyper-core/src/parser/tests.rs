@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Parser unit tests — validates parsing of Phenotyper v1 syntax.
+//! Parser unit tests — validates parsing of Phenotyper v2 syntax.
 
 use super::*;
 
 #[test]
 fn parse_namespace_only() {
-    let source = "namespace aivolution/format/csv;";
+    let source = "test/ns: .";
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
 }
@@ -13,8 +13,9 @@ fn parse_namespace_only() {
 #[test]
 fn parse_namespace_and_uses() {
     let source = r#"
-        namespace aivolution/format/csv;
+        aivolution/format/csv:
         uses aivolution/core/types;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -23,8 +24,9 @@ fn parse_namespace_and_uses() {
 #[test]
 fn parse_type_alias() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type CSVFieldValue: string;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -33,8 +35,9 @@ fn parse_type_alias() {
 #[test]
 fn parse_enum_decl() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type Encoding: [UTF8, ASCII, Latin1];
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -43,12 +46,13 @@ fn parse_enum_decl() {
 #[test]
 fn parse_simple_phenotype() {
     let source = r#"
-        namespace test/format;
+        test/format:
         CSVLine:
             fields: required string,
             separator: required string,
             @(fields)
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -57,12 +61,13 @@ fn parse_simple_phenotype() {
 #[test]
 fn parse_phenotype_with_plural() {
     let source = r#"
-        namespace test/format;
+        test/format:
         CSVLine plural CSVLines:
             fields: required string,
             separator: required string,
             @(fields)
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -71,12 +76,13 @@ fn parse_phenotype_with_plural() {
 #[test]
 fn parse_directive_call() {
     let source = r#"
-        namespace test/format;
+        test/format:
         CSVLine:
             fields: required string,
             separator: required string,
             @join(fields, separator)
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -85,12 +91,13 @@ fn parse_directive_call() {
 #[test]
 fn parse_bare_eol() {
     let source = r#"
-        namespace test/format;
+        test/format:
         Record:
             value: required string,
             @(value),
             @eol
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -99,13 +106,14 @@ fn parse_bare_eol() {
 #[test]
 fn parse_eol_with_field() {
     let source = r#"
-        namespace test/format;
+        test/format:
         Record:
             value: required string,
             eol: required string,
             @(value),
             @eol(eol)
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -114,11 +122,12 @@ fn parse_eol_with_field() {
 #[test]
 fn parse_block_directive() {
     let source = r#"
-        namespace test/format;
+        test/format:
         CSVFile:
             footer: optional string,
             @ifset(footer) { @eol, @(footer) }
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -127,11 +136,12 @@ fn parse_block_directive() {
 #[test]
 fn parse_cardinality_plus() {
     let source = r#"
-        namespace test/format;
+        test/format:
         CSVFile:
             lines: required string+,
             @(lines)
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -140,11 +150,12 @@ fn parse_cardinality_plus() {
 #[test]
 fn parse_cardinality_star() {
     let source = r#"
-        namespace test/format;
+        test/format:
         CSVFile:
             lines: required string*,
             @(lines)
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -153,11 +164,12 @@ fn parse_cardinality_star() {
 #[test]
 fn parse_optional_field() {
     let source = r#"
-        namespace test/format;
+        test/format:
         CSVFile:
             header: optional string,
             @(header)
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -166,12 +178,13 @@ fn parse_optional_field() {
 #[test]
 fn parse_string_literal_render() {
     let source = r#"
-        namespace test/format;
+        test/format:
         Record:
             name: required string,
             "Hello, ",
             @(name)
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -180,11 +193,12 @@ fn parse_string_literal_render() {
 #[test]
 fn parse_union_type() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Flexible:
             value: required {string, int64},
             @(value)
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -194,12 +208,13 @@ fn parse_union_type() {
 fn parse_line_comments() {
     let source = r#"
         // This is the main namespace
-        namespace test/format;
+        test/format:
         // A record type
         Record:
             name: required string, // field name
             @(name)
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -210,11 +225,12 @@ fn parse_block_comments() {
     let source = r#"
         /* Multi-line
            comment */
-        namespace test/format;
+        test/format:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#;
     let result = parse_pht(source, "test.pht");
     assert!(result.is_ok(), "parse failed: {result:?}");
@@ -247,7 +263,7 @@ fn parse_md_extraction() {
     let md = r#"# Example
 
 ```pht
-namespace test/format;
+test/format:
 Record:
     name: required string,
     @(name)
@@ -260,19 +276,59 @@ Some text here.
     assert!(result.is_ok(), "parse failed: {result:?}");
 }
 
+// --- v2-specific tests ---
+
+#[test]
+fn parse_single_segment_namespace() {
+    // GLR: single-segment namespace should be disambiguated from phenotype
+    let source = "csv: .";
+    let result = parse_pht(source, "test.pht");
+    assert!(result.is_ok(), "single-segment namespace parse failed: {result:?}");
+}
+
+#[test]
+fn parse_empty_namespace() {
+    let source = "test/empty: .";
+    let result = parse_pht(source, "test.pht");
+    assert!(result.is_ok(), "empty namespace parse failed: {result:?}");
+}
+
+#[test]
+fn parse_md_without_trailing_dot() {
+    // The parser should auto-append '.' for .md containers
+    let md = r#"# Example
+
+```pht
+test/format:
+Record:
+    name: required string,
+    @(name)
+;
+```
+"#;
+    let result = parse_md(md, "example.md");
+    assert!(result.is_ok(), "md without trailing dot should parse: {result:?}");
+}
+
 // --- Negative tests ---
 
 #[test]
-fn parse_missing_semicolon() {
-    let source = "namespace test/format";
+fn parse_missing_dot_terminator() {
+    // v2 requires '.' to terminate namespace scope
+    let source = "test/format:
+        Record:
+            name: required string,
+            @(name)
+        ;
+    ";
     let result = parse_pht(source, "test.pht");
-    assert!(result.is_err());
+    assert!(result.is_err(), "should fail without '.' terminator");
 }
 
 #[test]
 fn parse_empty_input() {
     let source = "";
     let result = parse_pht(source, "test.pht");
-    // Empty input should fail (missing namespace)
+    // Empty input should fail (missing namespace scope)
     assert!(result.is_err());
 }

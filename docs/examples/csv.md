@@ -3,7 +3,7 @@
 Code will be generated using the `aivolution/format/csv` namespace.
 
 ```pht
-namespace aivolution/format/csv;
+aivolution/format/csv:
 ```
 
 ## Scalar Values

@@ -32,11 +32,12 @@ fn generate_ok(source: &str) -> String {
 fn generated_header() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#,
     );
     assert!(code.contains("@generated"));
@@ -47,11 +48,12 @@ fn generated_header() {
 fn render_trait_generated() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#,
     );
     assert!(code.contains("pub trait Render"));
@@ -63,11 +65,12 @@ fn render_trait_generated() {
 fn build_error_generated() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#,
     );
     assert!(code.contains("pub enum BuildError"));
@@ -82,12 +85,13 @@ fn build_error_generated() {
 fn singular_struct_generated() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             count: required int64,
             @(name)
         ;
+    .
     "#,
     );
     assert!(code.contains("pub struct Record"));
@@ -99,13 +103,14 @@ fn singular_struct_generated() {
 fn optional_field_is_option() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             desc: optional string,
             @(name),
             @ifset(desc) { @(desc) }
         ;
+    .
     "#,
     );
     assert!(code.contains("pub desc: Option<String>"));
@@ -115,11 +120,12 @@ fn optional_field_is_option() {
 fn collection_field_is_vec() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             tags: required string*,
             @join(tags, ", ")
         ;
+    .
     "#,
     );
     assert!(code.contains("pub tags: Vec<String>"));
@@ -131,11 +137,12 @@ fn collection_field_is_vec() {
 fn builder_generated() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#,
     );
     assert!(code.contains("pub struct RecordBuilder"));
@@ -149,11 +156,12 @@ fn builder_generated() {
 fn builder_convenience_method() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#,
     );
     assert!(code.contains("impl Record"));
@@ -164,11 +172,12 @@ fn builder_convenience_method() {
 fn builder_validates_missing_required() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#,
     );
     assert!(code.contains("MissingField(\"name\")"));
@@ -178,11 +187,12 @@ fn builder_validates_missing_required() {
 fn builder_validates_one_or_more() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             items: required string+,
             @join(items, ", ")
         ;
+    .
     "#,
     );
     assert!(code.contains("CardinalityViolation(\"items\")"));
@@ -194,11 +204,12 @@ fn builder_validates_one_or_more() {
 fn render_impl_generated() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#,
     );
     assert!(code.contains("impl Render for Record"));
@@ -209,11 +220,12 @@ fn render_impl_generated() {
 fn render_string_field() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#,
     );
     assert!(code.contains("out.push_str(&self.name)"));
@@ -223,12 +235,13 @@ fn render_string_field() {
 fn render_text_literal() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             "Hello: ",
             @(name)
         ;
+    .
     "#,
     );
     assert!(code.contains("out.push_str(\"Hello: \")"));
@@ -238,12 +251,13 @@ fn render_text_literal() {
 fn render_eol_bare() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name),
             @eol
         ;
+    .
     "#,
     );
     assert!(code.contains("out.push('\\n')"));
@@ -253,13 +267,14 @@ fn render_eol_bare() {
 fn render_eol_with_field() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             eol: required string,
             @(name),
             @eol(eol)
         ;
+    .
     "#,
     );
     assert!(code.contains("out.push_str(&self.eol)"));
@@ -269,11 +284,12 @@ fn render_eol_with_field() {
 fn render_join_literal_separator() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             tags: required string*,
             @join(tags, ", ")
         ;
+    .
     "#,
     );
     assert!(code.contains("out.push_str(\", \")"));
@@ -284,12 +300,13 @@ fn render_join_literal_separator() {
 fn render_join_field_separator() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             items: required string*,
             sep: required string,
             @join(items, sep)
         ;
+    .
     "#,
     );
     assert!(code.contains("out.push_str(&self.sep)"));
@@ -299,13 +316,14 @@ fn render_join_field_separator() {
 fn render_ifset() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             footer: optional string,
             @(name),
             @ifset(footer) { @(footer) }
         ;
+    .
     "#,
     );
     assert!(code.contains("if let Some(ref val) = self.footer"));
@@ -315,11 +333,12 @@ fn render_ifset() {
 fn render_ifnotempty() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             tags: required string*,
             @ifnotempty(tags) { @join(tags, ", ") }
         ;
+    .
     "#,
     );
     assert!(code.contains("if !self.tags.is_empty()"));
@@ -331,11 +350,12 @@ fn render_ifnotempty() {
 fn plural_wrapper_generated() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Item plural Items:
             value: required string,
             @(value)
         ;
+    .
     "#,
     );
     assert!(code.contains("pub struct Items"));
@@ -351,11 +371,12 @@ fn plural_wrapper_generated() {
 fn plural_from_into_vec() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Item plural Items:
             value: required string,
             @(value)
         ;
+    .
     "#,
     );
     assert!(code.contains("impl From<Vec<Item>> for Items"));
@@ -366,11 +387,12 @@ fn plural_from_into_vec() {
 fn plural_builder_generated() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Item plural Items:
             value: required string,
             @(value)
         ;
+    .
     "#,
     );
     assert!(code.contains("pub struct ItemsBuilder"));
@@ -382,11 +404,12 @@ fn plural_builder_generated() {
 fn plural_render_impl() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Item plural Items:
             value: required string,
             @(value)
         ;
+    .
     "#,
     );
     assert!(code.contains("impl Render for Items"));
@@ -398,8 +421,9 @@ fn plural_render_impl() {
 fn enum_type_generated() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         type Color: [Red, Green, Blue];
+    .
     "#,
     );
     assert!(code.contains("pub enum Color"));
@@ -412,8 +436,9 @@ fn enum_type_generated() {
 fn enum_render_original_spelling() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         type Visibility: [public, protected, private];
+    .
     "#,
     );
     // Variants should be PascalCase
@@ -432,8 +457,9 @@ fn enum_render_original_spelling() {
 fn union_alias_generated() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         type ScalarValue: {int64, real64, string};
+    .
     "#,
     );
     assert!(code.contains("pub enum ScalarValue"));
@@ -446,8 +472,9 @@ fn union_alias_generated() {
 fn simple_alias_generated() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         type Name: string;
+    .
     "#,
     );
     assert!(code.contains("pub type Name = String;"));
@@ -459,11 +486,12 @@ fn simple_alias_generated() {
 fn naming_csv_types() {
     let code = generate_ok(
         r#"
-        namespace test/types;
+        test/types:
         CSVLine plural CSVLines:
             value: required string,
             @(value)
         ;
+    .
     "#,
     );
     assert!(code.contains("pub struct CsvLine"));

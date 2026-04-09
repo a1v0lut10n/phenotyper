@@ -17,7 +17,7 @@ pub fn resolve_references(
     file: &str,
     diags: &mut Vec<Diagnostic>,
 ) {
-    if let Some(ref decls) = file_ast.decls {
+    if let Some(ref decls) = file_ast.ns.decls {
         for decl in decls {
             if let ast::TopLevelDecl::TypeDef(td) = decl {
                 resolve_type_def(td, table, file, diags);

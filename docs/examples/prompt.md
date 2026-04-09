@@ -4,7 +4,7 @@ This example demonstrates how Phenotyper can generate structured system
 prompts for LLM applications.
 
 ```pht
-namespace aivolution/ai/prompt;
+aivolution/ai/prompt:
 ```
 
 ## Prompt Sections

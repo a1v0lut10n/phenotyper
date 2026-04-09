@@ -35,7 +35,7 @@ pub fn lower_module(
     let mut enums = Vec::new();
     let mut aliases = Vec::new();
 
-    if let Some(ref decls) = file_ast.decls {
+    if let Some(ref decls) = file_ast.ns.decls {
         for decl in decls {
             match decl {
                 ast::TopLevelDecl::TypeDecl(td) => {

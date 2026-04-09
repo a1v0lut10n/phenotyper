@@ -64,11 +64,12 @@ fn valid_csv_fixture() {
 fn valid_simple_type() {
     validate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#,
     );
 }
@@ -77,13 +78,14 @@ fn valid_simple_type() {
 fn valid_optional_with_ifset() {
     validate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             footer: optional string,
             @(name),
             @ifset(footer) { @(footer) }
         ;
+    .
     "#,
     );
 }
@@ -92,11 +94,12 @@ fn valid_optional_with_ifset() {
 fn valid_collection_with_join() {
     validate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             tags: required string*,
             @join(tags, ", ")
         ;
+    .
     "#,
     );
 }
@@ -105,7 +108,7 @@ fn valid_collection_with_join() {
 fn valid_plural_with_join() {
     validate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Item plural Items:
             value: required string,
             @(value)
@@ -115,6 +118,7 @@ fn valid_plural_with_join() {
             sep: required string,
             @join(items, sep)
         ;
+    .
     "#,
     );
 }
@@ -123,11 +127,12 @@ fn valid_plural_with_join() {
 fn valid_ifnotempty_on_collection() {
     validate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             tags: required string*,
             @ifnotempty(tags) { @join(tags, ", ") }
         ;
+    .
     "#,
     );
 }
@@ -136,13 +141,14 @@ fn valid_ifnotempty_on_collection() {
 fn valid_eol_with_string_field() {
     validate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             value: required string,
             eol: required string,
             @(value),
             @eol(eol)
         ;
+    .
     "#,
     );
 }
@@ -151,12 +157,13 @@ fn valid_eol_with_string_field() {
 fn valid_bare_eol() {
     validate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             value: required string,
             @(value),
             @eol
         ;
+    .
     "#,
     );
 }
@@ -165,12 +172,13 @@ fn valid_bare_eol() {
 fn valid_text_only_render() {
     validate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             value: required string,
             "prefix: ",
             @(value)
         ;
+    .
     "#,
     );
 }
@@ -181,11 +189,12 @@ fn valid_text_only_render() {
 fn error_emit_collection_field() {
     expect_error(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             tags: required string*,
             @(tags)
         ;
+    .
     "#,
         "cannot directly emit collection field `tags`",
     );
@@ -195,7 +204,7 @@ fn error_emit_collection_field() {
 fn error_emit_plural_field() {
     expect_error(
         r#"
-        namespace test/types;
+        test/types:
         Item plural Items:
             value: required string,
             @(value)
@@ -204,6 +213,7 @@ fn error_emit_plural_field() {
             items: required Items,
             @(items)
         ;
+    .
     "#,
         "cannot directly emit collection field `items`",
     );
@@ -213,11 +223,12 @@ fn error_emit_plural_field() {
 fn error_emit_one_or_more_field() {
     expect_error(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             tags: required string+,
             @(tags)
         ;
+    .
     "#,
         "cannot directly emit collection field `tags`",
     );
@@ -229,13 +240,14 @@ fn error_emit_one_or_more_field() {
 fn error_emit_optional_outside_ifset() {
     expect_error(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             footer: optional string,
             @(name),
             @(footer)
         ;
+    .
     "#,
         "cannot directly emit optional field `footer`",
     );
@@ -246,13 +258,14 @@ fn valid_emit_optional_inside_ifset() {
     // Should NOT produce the optional-emit error when inside @ifset
     validate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             footer: optional string,
             @(name),
             @ifset(footer) { @(footer) }
         ;
+    .
     "#,
     );
 }
@@ -263,11 +276,12 @@ fn valid_emit_optional_inside_ifset() {
 fn error_ifset_on_required_field() {
     expect_error(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @ifset(name) { @(name) }
         ;
+    .
     "#,
         "@ifset on non-optional field `name`",
     );
@@ -279,11 +293,12 @@ fn error_ifset_on_required_field() {
 fn error_ifnotempty_on_scalar_field() {
     expect_error(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @ifnotempty(name) { @(name) }
         ;
+    .
     "#,
         "@ifnotempty on non-collection field `name`",
     );
@@ -295,12 +310,13 @@ fn error_ifnotempty_on_scalar_field() {
 fn error_join_separator_non_string() {
     expect_error(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             items: required string*,
             count: required int64,
             @join(items, count)
         ;
+    .
     "#,
         "@join separator field `count`",
     );
@@ -310,12 +326,13 @@ fn error_join_separator_non_string() {
 fn error_join_separator_collection() {
     expect_error(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             items: required string*,
             seps: required string*,
             @join(items, seps)
         ;
+    .
     "#,
         "must be singular",
     );
@@ -327,11 +344,12 @@ fn error_join_separator_collection() {
 fn error_join_on_scalar_field() {
     expect_error(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @join(name, ", ")
         ;
+    .
     "#,
         "@join field `name` in type `Record` is not a collection",
     );
@@ -343,11 +361,12 @@ fn error_join_on_scalar_field() {
 fn error_direct_cycle() {
     expect_error(
         r#"
-        namespace test/types;
+        test/types:
         Node:
             child: required Node,
             @(child)
         ;
+    .
     "#,
         "cyclic type definition involving `Node`",
     );
@@ -357,7 +376,7 @@ fn error_direct_cycle() {
 fn error_indirect_cycle() {
     expect_error(
         r#"
-        namespace test/types;
+        test/types:
         A:
             b: required B,
             @(b)
@@ -366,6 +385,7 @@ fn error_indirect_cycle() {
             a: required A,
             @(a)
         ;
+    .
     "#,
         "cyclic type definition",
     );
@@ -376,13 +396,14 @@ fn valid_optional_breaks_cycle() {
     // Optional references should NOT create a cycle
     validate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Node:
             name: required string,
             child: optional Node,
             @(name),
             @ifset(child) { @(child) }
         ;
+    .
     "#,
     );
 }
@@ -392,13 +413,14 @@ fn valid_collection_breaks_cycle() {
     // Collection references should NOT create a cycle
     validate_ok(
         r#"
-        namespace test/types;
+        test/types:
         Node:
             name: required string,
             children: required Node*,
             @(name),
             @ifnotempty(children) { @join(children, ", ") }
         ;
+    .
     "#,
     );
 }
@@ -422,13 +444,14 @@ fn error_empty_render_body() {
 fn error_eol_with_non_string_field() {
     expect_error(
         r#"
-        namespace test/types;
+        test/types:
         Record:
             value: required string,
             count: required int64,
             @(value),
             @eol(count)
         ;
+    .
     "#,
         "@eol field `count` in type `Record` must be a string",
     );

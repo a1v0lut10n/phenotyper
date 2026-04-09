@@ -84,11 +84,12 @@ fn valid_csv_fixture() {
 #[test]
 fn valid_simple_phenotype() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#;
     let table = build_symbols_ok(source);
     assert!(matches!(
@@ -106,11 +107,12 @@ fn valid_simple_phenotype() {
 #[test]
 fn valid_with_plural() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Item plural Items:
             value: required string,
             @(value)
         ;
+    .
     "#;
     let table = build_symbols_ok(source);
     assert!(matches!(table.resolve("Item"), Some(Symbol::Phenotype(_))));
@@ -124,8 +126,9 @@ fn valid_with_plural() {
 #[test]
 fn valid_enum() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type Color: [Red, Green, Blue];
+    .
     "#;
     let table = build_symbols_ok(source);
     assert!(matches!(table.resolve("Color"), Some(Symbol::Enum(_))));
@@ -136,8 +139,9 @@ fn valid_enum() {
 #[test]
 fn valid_type_alias() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type Name: string;
+    .
     "#;
     let table = build_symbols_ok(source);
     assert!(matches!(table.resolve("Name"), Some(Symbol::Alias(_))));
@@ -146,12 +150,13 @@ fn valid_type_alias() {
 #[test]
 fn valid_optional_field() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             desc: optional string,
             @(name)
         ;
+    .
     "#;
     let table = build_symbols_ok(source);
     assert_eq!(
@@ -163,7 +168,7 @@ fn valid_optional_field() {
 #[test]
 fn valid_primitive_type_resolution() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             s: required string,
             i: required int64,
@@ -174,6 +179,7 @@ fn valid_primitive_type_resolution() {
             dt: required datetime,
             @(s)
         ;
+    .
     "#;
     // All primitive types should resolve without errors
     build_symbols_ok(source);
@@ -182,12 +188,13 @@ fn valid_primitive_type_resolution() {
 #[test]
 fn valid_self_referencing_type() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type Value: string;
         Record:
             value: required Value,
             @(value)
         ;
+    .
     "#;
     build_symbols_ok(source);
 }
@@ -195,12 +202,13 @@ fn valid_self_referencing_type() {
 #[test]
 fn valid_enum_as_field_type() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type Color: [Red, Green, Blue];
         Tag:
             color: required Color,
             @(color)
         ;
+    .
     "#;
     build_symbols_ok(source);
 }
@@ -208,7 +216,7 @@ fn valid_enum_as_field_type() {
 #[test]
 fn valid_plural_as_field_type() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Item plural Items:
             value: required string,
             @(value)
@@ -217,6 +225,7 @@ fn valid_plural_as_field_type() {
             items: required Items,
             @(items)
         ;
+    .
     "#;
     build_symbols_ok(source);
 }
@@ -224,7 +233,7 @@ fn valid_plural_as_field_type() {
 #[test]
 fn valid_multiple_render_exprs() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             eol: required string,
@@ -233,6 +242,7 @@ fn valid_multiple_render_exprs() {
             @eol(eol),
             @eol
         ;
+    .
     "#;
     build_symbols_ok(source);
 }
@@ -240,13 +250,14 @@ fn valid_multiple_render_exprs() {
 #[test]
 fn valid_block_directive() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             footer: optional string,
             @(name),
             @ifset(footer) { @(footer) }
         ;
+    .
     "#;
     build_symbols_ok(source);
 }
@@ -256,7 +267,7 @@ fn valid_block_directive() {
 #[test]
 fn error_duplicate_singular_name() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
@@ -265,6 +276,7 @@ fn error_duplicate_singular_name() {
             value: required string,
             @(value)
         ;
+    .
     "#;
     expect_error(source, "duplicate type name `Record`");
 }
@@ -272,7 +284,7 @@ fn error_duplicate_singular_name() {
 #[test]
 fn error_duplicate_plural_name() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Item plural Items:
             value: required string,
             @(value)
@@ -281,6 +293,7 @@ fn error_duplicate_plural_name() {
             value: required string,
             @(value)
         ;
+    .
     "#;
     expect_error(source, "duplicate type name `Items`");
 }
@@ -288,7 +301,7 @@ fn error_duplicate_plural_name() {
 #[test]
 fn error_singular_plural_collision() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Items:
             value: required string,
             @(value)
@@ -297,6 +310,7 @@ fn error_singular_plural_collision() {
             value: required string,
             @(value)
         ;
+    .
     "#;
     expect_error(source, "duplicate type name `Items`");
 }
@@ -304,11 +318,12 @@ fn error_singular_plural_collision() {
 #[test]
 fn error_singular_equals_plural() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Item plural Item:
             value: required string,
             @(value)
         ;
+    .
     "#;
     expect_error(
         source,
@@ -319,12 +334,13 @@ fn error_singular_equals_plural() {
 #[test]
 fn error_duplicate_field() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             name: optional string,
             @(name)
         ;
+    .
     "#;
     expect_error(source, "duplicate field `name` in type `Record`");
 }
@@ -332,8 +348,9 @@ fn error_duplicate_field() {
 #[test]
 fn error_duplicate_enum_member() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type Color: [Red, Green, Red];
+    .
     "#;
     expect_error(source, "duplicate enum member `Red` in enum `Color`");
 }
@@ -341,12 +358,13 @@ fn error_duplicate_enum_member() {
 #[test]
 fn error_duplicate_type_decl_and_def() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type Record: string;
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#;
     expect_error(source, "duplicate type name `Record`");
 }
@@ -354,12 +372,13 @@ fn error_duplicate_type_decl_and_def() {
 #[test]
 fn error_duplicate_enum_and_phenotype() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type Color: [Red, Green, Blue];
         Color:
             value: required string,
             @(value)
         ;
+    .
     "#;
     expect_error(source, "duplicate type name `Color`");
 }
@@ -369,11 +388,12 @@ fn error_duplicate_enum_and_phenotype() {
 #[test]
 fn error_unknown_type_reference() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             value: required UnknownType,
             @(value)
         ;
+    .
     "#;
     expect_error(source, "unknown type `UnknownType`");
 }
@@ -381,11 +401,12 @@ fn error_unknown_type_reference() {
 #[test]
 fn error_unknown_field_reference() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(nonexistent)
         ;
+    .
     "#;
     expect_error(source, "unknown field `nonexistent` in type `Record`");
 }
@@ -393,11 +414,12 @@ fn error_unknown_field_reference() {
 #[test]
 fn error_unknown_field_in_directive() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @join(missing_field, name)
         ;
+    .
     "#;
     expect_error(source, "unknown field `missing_field` in type `Record`");
 }
@@ -405,12 +427,13 @@ fn error_unknown_field_in_directive() {
 #[test]
 fn error_unknown_field_in_block_directive() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             footer: optional string,
             @ifset(footer) { @(bad_field) }
         ;
+    .
     "#;
     expect_error(source, "unknown field `bad_field` in type `Record`");
 }
@@ -418,11 +441,12 @@ fn error_unknown_field_in_block_directive() {
 #[test]
 fn error_unknown_type_in_union() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             value: required {string, UnknownType},
             @(value)
         ;
+    .
     "#;
     expect_error(source, "unknown type `UnknownType`");
 }
@@ -430,8 +454,9 @@ fn error_unknown_type_in_union() {
 #[test]
 fn error_unknown_type_in_alias() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type MyAlias: UnknownType;
+    .
     "#;
     expect_error(source, "unknown type `UnknownType`");
 }
@@ -441,12 +466,13 @@ fn error_unknown_type_in_alias() {
 #[test]
 fn resolve_field_by_name() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             age: optional int64,
             @(name)
         ;
+    .
     "#;
     let table = build_symbols_ok(source);
     let type_id = match table.resolve("Record") {
@@ -461,11 +487,12 @@ fn resolve_field_by_name() {
 #[test]
 fn plural_companion_maps_to_singular() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Item plural Items:
             value: required string,
             @(value)
         ;
+    .
     "#;
     let table = build_symbols_ok(source);
 

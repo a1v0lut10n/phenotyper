@@ -66,7 +66,7 @@ fn lower_csv_fixture() {
 
 #[test]
 fn namespace_is_joined() {
-    let source = "namespace aivolution/format/csv;";
+    let source = "aivolution/format/csv: .";
     // This fails at symbol level (no types) but we can still test
     let ast = parser::parse_pht(source, "test.pht").unwrap();
     let (table, _) = symbol::build(&ast, "test.pht");
@@ -79,7 +79,7 @@ fn namespace_is_joined() {
 #[test]
 fn primitives_resolve_correctly() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             s: required string,
             i: required int64,
@@ -90,6 +90,7 @@ fn primitives_resolve_correctly() {
             dt: required datetime,
             @(s)
         ;
+    .
     "#;
     let module = lower_ok(source);
     let fields = &module.types[0].fields;
@@ -108,11 +109,12 @@ fn primitives_resolve_correctly() {
 #[test]
 fn cardinality_plus() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             items: required string+,
             @(items)
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(
@@ -124,11 +126,12 @@ fn cardinality_plus() {
 #[test]
 fn cardinality_star() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             items: required string*,
             @(items)
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(
@@ -140,11 +143,12 @@ fn cardinality_star() {
 #[test]
 fn cardinality_default_one() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(module.types[0].fields[0].cardinality, Cardinality::One);
@@ -155,12 +159,13 @@ fn cardinality_default_one() {
 #[test]
 fn required_and_optional_fields() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             desc: optional string,
             @(name)
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(
@@ -178,7 +183,7 @@ fn required_and_optional_fields() {
 #[test]
 fn plural_companion_lowers_to_user_plural() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Item plural Items:
             value: required string,
             @(value)
@@ -187,6 +192,7 @@ fn plural_companion_lowers_to_user_plural() {
             items: required Items,
             @(items)
         ;
+    .
     "#;
     let module = lower_ok(source);
 
@@ -205,7 +211,7 @@ fn plural_companion_lowers_to_user_plural() {
 #[test]
 fn singular_ref_lowers_to_user_singular() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Item plural Items:
             value: required string,
             @(value)
@@ -214,6 +220,7 @@ fn singular_ref_lowers_to_user_singular() {
             item: required Item,
             @(item)
         ;
+    .
     "#;
     let module = lower_ok(source);
     let item_field = &module.types[1].fields[0];
@@ -225,12 +232,13 @@ fn singular_ref_lowers_to_user_singular() {
 #[test]
 fn enum_type_lowered() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type Color: [Red, Green, Blue];
         Tag:
             color: required Color,
             @(color)
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(module.enums.len(), 1);
@@ -247,8 +255,9 @@ fn enum_type_lowered() {
 #[test]
 fn alias_lowers_to_type_alias() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type Name: string;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(module.aliases.len(), 1);
@@ -264,8 +273,9 @@ fn alias_lowers_to_type_alias() {
 #[test]
 fn union_flattened() {
     let source = r#"
-        namespace test/types;
+        test/types:
         type ScalarValue: {int64, real64, string};
+    .
     "#;
     let module = lower_ok(source);
     let target = &module.aliases[0].target;
@@ -288,11 +298,12 @@ fn union_flattened() {
 #[test]
 fn field_ref_becomes_emit() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             @(name)
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(module.types[0].render, vec![RenderNode::Emit(FieldId(0))]);
@@ -301,12 +312,13 @@ fn field_ref_becomes_emit() {
 #[test]
 fn string_literal_becomes_text() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             "Hello, ",
             @(name)
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(
@@ -318,12 +330,13 @@ fn string_literal_becomes_text() {
 #[test]
 fn string_literal_unescape() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             "line1\nline2",
             @(name)
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(
@@ -337,12 +350,13 @@ fn string_literal_unescape() {
 #[test]
 fn bare_eol_becomes_eol_none() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             value: required string,
             @(value),
             @eol
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(module.types[0].render[1], RenderNode::Eol { field: None });
@@ -351,13 +365,14 @@ fn bare_eol_becomes_eol_none() {
 #[test]
 fn eol_with_arg_becomes_eol_some() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             value: required string,
             eol: required string,
             @(value),
             @eol(eol)
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(
@@ -371,12 +386,13 @@ fn eol_with_arg_becomes_eol_some() {
 #[test]
 fn eol_empty_parens_becomes_eol_none() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             value: required string,
             @(value),
             @eol()
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(module.types[0].render[1], RenderNode::Eol { field: None });
@@ -387,12 +403,13 @@ fn eol_empty_parens_becomes_eol_none() {
 #[test]
 fn join_with_field_separator() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             fields: required string,
             separator: required string,
             @join(fields, separator)
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(
@@ -407,11 +424,12 @@ fn join_with_field_separator() {
 #[test]
 fn join_with_literal_separator() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             tags: required string,
             @join(tags, ", ")
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(
@@ -428,13 +446,14 @@ fn join_with_literal_separator() {
 #[test]
 fn ifset_lowered() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             name: required string,
             footer: optional string,
             @(name),
             @ifset(footer) { @(footer) }
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(
@@ -449,11 +468,12 @@ fn ifset_lowered() {
 #[test]
 fn ifnotempty_lowered() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             tags: required string*,
             @ifnotempty(tags) { @join(tags, ", ") }
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(
@@ -471,11 +491,12 @@ fn ifnotempty_lowered() {
 #[test]
 fn nested_block_body() {
     let source = r#"
-        namespace test/types;
+        test/types:
         Record:
             footer: optional string,
             @ifset(footer) { @eol, @(footer) }
         ;
+    .
     "#;
     let module = lower_ok(source);
     assert_eq!(

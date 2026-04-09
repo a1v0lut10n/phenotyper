@@ -4,7 +4,7 @@ This example demonstrates optional fields (`@ifset`) and conditional
 collection rendering (`@ifnotempty`) for generating markdown-style reports.
 
 ```pht
-namespace aivolution/format/report;
+aivolution/format/report:
 ```
 
 ## Tags

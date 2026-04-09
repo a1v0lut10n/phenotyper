@@ -16,17 +16,28 @@ pub fn string_literal(_ctx: &Ctx, token: Token) -> StringLiteral {
 }
 #[derive(Debug, Clone)]
 pub struct File {
-    pub ns: NamespaceDecl,
+    pub ns: NamespaceScope,
+}
+pub fn file_c1(_ctx: &Ctx, ns: NamespaceScope) -> File {
+    File { ns }
+}
+#[derive(Debug, Clone)]
+pub struct NamespaceScope {
+    pub path: NamespacePath,
     pub uses: UsesDecl0,
     pub decls: TopLevelDecl0,
 }
-pub fn file_c1(
+pub fn namespace_scope_c1(
     _ctx: &Ctx,
-    ns: NamespaceDecl,
+    path: NamespacePath,
     uses: UsesDecl0,
     decls: TopLevelDecl0,
-) -> File {
-    File { ns, uses, decls }
+) -> NamespaceScope {
+    NamespaceScope {
+        path,
+        uses,
+        decls,
+    }
 }
 pub type UsesDecl1 = Vec<UsesDecl>;
 pub fn uses_decl1_c1(
@@ -71,13 +82,6 @@ pub fn top_level_decl0_top_level_decl1(
 }
 pub fn top_level_decl0_empty(_ctx: &Ctx) -> TopLevelDecl0 {
     None
-}
-#[derive(Debug, Clone)]
-pub struct NamespaceDecl {
-    pub path: NamespacePath,
-}
-pub fn namespace_decl_c1(_ctx: &Ctx, path: NamespacePath) -> NamespaceDecl {
-    NamespaceDecl { path }
 }
 pub type NamespacePath = Ident1;
 pub fn namespace_path_ident1(_ctx: &Ctx, ident1: Ident1) -> NamespacePath {

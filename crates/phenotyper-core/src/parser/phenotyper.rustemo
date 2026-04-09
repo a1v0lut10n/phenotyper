@@ -1,15 +1,22 @@
-// Phenotyper v1 Grammar
+// Phenotyper v2 Grammar
 // ====================
-// LR(1) grammar for the Phenotyper structural artifact definition language.
+// GLR grammar for the Phenotyper structural artifact definition language.
 // Parsed by Rustemo (rustemo.rs) — generates parser + default AST types.
+//
+// v2 changes from v1:
+// - Namespace syntax: 'namespace path;' → 'path:' ... '.'
+// - GLR mode: resolves Ident ':' ambiguity (namespace vs phenotype)
+// - Removed 'namespace' keyword
 
 // ---------------------------------------------------------------------------
 // Top-level structure
 // ---------------------------------------------------------------------------
 
-File: ns=NamespaceDecl uses=UsesDecl* decls=TopLevelDecl*;
+// GLR: the parser forks on 'Ident :' — NamespaceScope terminates with '.',
+// TypeDef terminates with ';'. The wrong branch is pruned structurally.
+File: ns=NamespaceScope;
 
-NamespaceDecl: 'namespace' path=NamespacePath ';';
+NamespaceScope: path=NamespacePath ':' uses=UsesDecl* decls=TopLevelDecl* '.';
 
 NamespacePath: Ident+[Slash];
 
@@ -111,8 +118,7 @@ terminals
 Ident: /[A-Za-z_][A-Za-z0-9_]*/;
 StringLiteral: /"([^"\\]|\\.)*"/;
 
-// Language keywords
-Namespace: 'namespace';
+// Language keywords (v2: 'namespace' removed)
 Uses: 'uses';
 Type: 'type';
 Plural: 'plural';
@@ -133,6 +139,7 @@ Slash: '/';
 Comma: ',';
 Colon: ':';
 Semicolon: ';';
+Dot: '.';
 At: '@';
 Plus: '+';
 Star: '*';

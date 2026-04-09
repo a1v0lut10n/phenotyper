@@ -1,4 +1,4 @@
-namespace aivolution/format/csv;
+aivolution/format/csv:
 
 type ScalarValue: {int64, real64, string, date, time, datetime};
 
@@ -19,3 +19,4 @@ CSVFile:
     eol: required string,
     @(header), @eol(eol), @join(lines, eol)
 ;
+.
