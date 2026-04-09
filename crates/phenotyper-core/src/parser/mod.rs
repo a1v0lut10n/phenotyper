@@ -19,8 +19,10 @@
 //! let ast = parser::parse_pht(source, "file.pht")?;
 //! ```
 
-// Include generated parser from OUT_DIR and actions from source tree
-rustemo::rustemo_mod!(phenotyper, "/src/parser");
+// Include generated parser from OUT_DIR and actions from source tree.
+// The unreachable_patterns allow is needed for a harmless pattern in
+// rustemo's GLR code generator output.
+rustemo::rustemo_mod!(#[allow(unreachable_patterns)] pub(crate) phenotyper, "/src/parser");
 
 #[allow(unused)]
 #[rustfmt::skip]
