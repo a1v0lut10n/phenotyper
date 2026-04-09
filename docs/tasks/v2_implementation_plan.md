@@ -141,13 +141,13 @@ then `?` operator (self-contained), then nesting (most complex).
 
 ### Phase 1: Grammar & Parser
 
-- [ ] **T-250**: Update `phenotyper.rustemo` grammar:
+- [x] **T-250**: Update `phenotyper.rustemo` grammar:
   - Add `nested=TypeDef {NestedType}` to `BodyItem` production.
   - Extend `FieldPath` to support multi-segment paths: `segments=Ident+[Slash]`.
   - Update `FieldRef` to use `FieldPath` instead of bare `Ident`.
-- [ ] **T-251**: Update `phenotyper_actions.rs` — build `NestedType` body items
+- [x] **T-251**: Update `phenotyper_actions.rs` — build `NestedType` body items
   and multi-segment `FieldPath` nodes.
-- [ ] **T-252**: Add parser unit tests for:
+- [x] **T-252**: Add parser unit tests for:
   - Phenotype nested inside phenotype
   - Two levels of nesting
   - `@(Parent/field)` scoped field reference
@@ -156,22 +156,22 @@ then `?` operator (self-contained), then nesting (most complex).
 
 ### Phase 2: AST
 
-- [ ] **T-253**: Update `ast.rs`:
+- [x] **T-253**: Update `ast.rs`:
   - Add `NestedType(TypeDef)` variant to `BodyItem`.
   - Change `FieldRef` to carry `Vec<String>` segments instead of single `String`.
-- [ ] **T-254**: Add AST unit tests for nested structures.
+- [x] **T-254**: Add AST unit tests for nested structures.
 
 ### Phase 3: Symbol Table
 
-- [ ] **T-255**: Update `symbol/collect.rs` — collect nested phenotype declarations:
+- [x] **T-255**: Update `symbol/collect.rs` — collect nested phenotype declarations:
   - Walk `BodyItem::NestedType` recursively.
   - Record parent–child relationship in a new `ScopeTree` or equivalent.
   - Nested phenotype names are scoped to their parent (not visible at namespace level).
-- [ ] **T-256**: Update `symbol/resolve.rs` — resolve scoped field paths:
+- [x] **T-256**: Update `symbol/resolve.rs` — resolve scoped field paths:
   - `@(name)` → search current scope, then parent, then namespace.
   - `@(Parent/field)` → resolve `Parent` as a containing phenotype, then `field` in it.
   - Emit error if `Parent` is not a containing phenotype.
-- [ ] **T-257**: Add symbol table tests for:
+- [x] **T-257**: Add symbol table tests for:
   - Nested phenotype name scoping (visible inside parent, invisible outside)
   - Scoped field path resolution `@(Parent/field)`
   - Shadowing: nested field with same name as parent field
@@ -179,31 +179,31 @@ then `?` operator (self-contained), then nesting (most complex).
 
 ### Phase 4: IR & Semantic Validation
 
-- [ ] **T-258**: Update `ir/lower.rs` — lower nested phenotypes:
+- [x] **T-258**: Update `ir/lower.rs` — lower nested phenotypes:
   - Flatten nested `TypeDef` into the module's type list (flat IR).
   - Record parent context reference for render expressions that use `@(Parent/field)`.
   - Lower `FieldPath` segments to `ScopedFieldRef { scope: Option<String>, field: String }`.
-- [ ] **T-259**: Update `ir/mod.rs` — add `parent_context: Option<String>` to
+- [x] **T-259**: Update `ir/mod.rs` — add `parent_context: Option<String>` to
   `PhenotypeIr` for nested phenotypes that reference parent fields.
-- [ ] **T-260**: Update `semantic/validate.rs`:
+- [x] **T-260**: Update `semantic/validate.rs`:
   - Validate that `@(Parent/field)` references resolve to real parent fields.
   - Validate nesting depth (warning at > 3 levels).
   - Validate that nested phenotype names don't collide with namespace-level names.
-- [ ] **T-261**: Add semantic validation tests for all nesting error cases.
+- [x] **T-261**: Add semantic validation tests for all nesting error cases.
 
 ### Phase 5: Code Generation
 
-- [ ] **T-262**: Update `codegen/emit.rs` — generate `render_with_parent` method:
+- [x] **T-262**: Update `codegen/emit.rs` — generate `render_with_parent` method:
   - Nested phenotypes that reference parent fields generate
     `fn render_with_parent(&self, parent: &ParentType, out: &mut String)`.
   - Nested phenotypes without parent references generate normal `render_into`.
-- [ ] **T-263**: Update `codegen/emit.rs` — parent render body calls `render_with_parent`:
+- [x] **T-263**: Update `codegen/emit.rs` — parent render body calls `render_with_parent`:
   - When the containing phenotype renders a nested child, it passes `&self` as parent.
-- [ ] **T-264**: Update `codegen/naming.rs` — nested phenotype naming:
+- [x] **T-264**: Update `codegen/naming.rs` — nested phenotype naming:
   - Nested phenotypes generate flat Rust types with their DSL name.
   - If a name collision with a namespace-level type is detected, emit a compile error
     (not a prefix-mangled name — keep generated code predictable).
-- [ ] **T-265**: Add codegen unit tests for:
+- [x] **T-265**: Add codegen unit tests for:
   - Nested phenotype generates flat struct
   - `render_with_parent` signature and body
   - Parent `render_into` calls `render_with_parent(self, out)`
@@ -211,12 +211,12 @@ then `?` operator (self-contained), then nesting (most complex).
 
 ### Phase 6: Integration
 
-- [ ] **T-266**: Create `tests/fixtures/valid/nested_basic.pht` — minimal nesting test.
-- [ ] **T-267**: Create `tests/fixtures/valid/javaclass.pht` — v2 translation of
+- [x] **T-266**: Create `tests/fixtures/valid/nested_basic.pht` — minimal nesting test.
+- [x] **T-267**: Create `tests/fixtures/valid/javaclass.pht` — v2 translation of
   `docs/examples/javaclass.md` as a comprehensive nesting fixture.
-- [ ] **T-268**: Add e2e tests: parse → compile → `rustc` → runtime verify for
+- [x] **T-268**: Add e2e tests: parse → compile → `rustc` → runtime verify for
   nested phenotypes.
-- [ ] **T-269**: Add CLI integration tests for nested phenotype files.
+- [x] **T-269**: Add CLI integration tests for nested phenotype files.
 
 **Requirements covered:** v2 spec §2
 

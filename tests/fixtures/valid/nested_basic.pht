@@ -1,0 +1,12 @@
+test/nested:
+
+Parent:
+    name: required string,
+    Child:
+        value: required string,
+        @(value)
+    ;,
+    @(name)
+;
+
+.

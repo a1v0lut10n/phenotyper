@@ -1,0 +1,22 @@
+java/types:
+
+type Visibility: [public, protected, private];
+
+JavaClass plural JavaClasses:
+    name: required string,
+    visibility: required Visibility,
+    superClass: optional string,
+
+    Constructor plural Constructors:
+        argList: optional string,
+        @(JavaClass/name), "(", @(argList)?, ")"
+    ;,
+
+    ctors: required Constructors,
+
+    "class ", @(name), " {", @eol,
+    @join(ctors, "\n"),
+    "}"
+;
+
+.

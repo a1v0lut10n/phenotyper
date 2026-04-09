@@ -308,15 +308,42 @@ fn emit_builder(pt: &PhenotypeType, module: &PhenotypeModule, out: &mut String) 
 fn emit_render_impl(pt: &PhenotypeType, module: &PhenotypeModule, out: &mut String) {
     let rust_name = naming::to_rust_type_name(&pt.singular_name);
 
-    out.push_str(&format!("impl Render for {rust_name} {{\n"));
-    out.push_str("    fn render_into(&self, out: &mut String) {\n");
+    if let Some(ref parent_name) = pt.parent_context {
+        // This nested type references parent fields → generate render_with_parent
+        let parent_rust = naming::to_rust_type_name(parent_name);
 
-    for node in &pt.render {
-        emit_render_node(node, pt, module, out, "        ");
+        // Standard Render trait impl that delegates to render_with_parent
+        // (panics at runtime if called without parent — this is a compile-time
+        // contract enforced by the DSL, not the generated Rust code)
+        out.push_str(&format!("impl Render for {rust_name} {{\n"));
+        out.push_str("    fn render_into(&self, _out: &mut String) {\n");
+        out.push_str(&format!(
+            "        panic!(\"{rust_name}::render_into called without parent; \
+             use render_with_parent instead\");\n"
+        ));
+        out.push_str("    }\n");
+        out.push_str("}\n\n");
+
+        // render_with_parent method
+        out.push_str(&format!("impl {rust_name} {{\n"));
+        out.push_str(&format!(
+            "    pub fn render_with_parent(&self, parent: &{parent_rust}, out: &mut String) {{\n"
+        ));
+        for node in &pt.render {
+            emit_render_node(node, pt, module, out, "        ");
+        }
+        out.push_str("    }\n");
+        out.push_str("}\n\n");
+    } else {
+        // Standard render_into
+        out.push_str(&format!("impl Render for {rust_name} {{\n"));
+        out.push_str("    fn render_into(&self, out: &mut String) {\n");
+        for node in &pt.render {
+            emit_render_node(node, pt, module, out, "        ");
+        }
+        out.push_str("    }\n");
+        out.push_str("}\n\n");
     }
-
-    out.push_str("    }\n");
-    out.push_str("}\n\n");
 }
 
 fn emit_render_node(
@@ -337,6 +364,14 @@ fn emit_render_node(
                 let field_name = naming::to_rust_field_name(&field.name);
                 emit_field_render(&field_name, &field.ty, out, indent);
             }
+        }
+
+        RenderNode::ParentFieldRef {
+            parent_type: _,
+            field_name,
+        } => {
+            let rust_field = naming::to_rust_field_name(field_name);
+            out.push_str(&format!("{indent}out.push_str(&parent.{rust_field});\\n"));
         }
 
         RenderNode::Eol { field } => {

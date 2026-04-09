@@ -536,3 +536,41 @@ fn error_conditional_ref_on_required() {
         "@ifset on non-optional field `name`",
     );
 }
+
+// ─── Nested phenotype ───────────────────────────────────────────────────────
+
+#[test]
+fn valid_nested_phenotype() {
+    validate_ok(
+        r#"
+        test/types:
+        Parent:
+            name: required string,
+            Child:
+                value: required string,
+                @(value)
+            ;,
+            @(name)
+        ;
+    .
+    "#,
+    );
+}
+
+#[test]
+fn valid_nested_with_plural() {
+    validate_ok(
+        r#"
+        test/types:
+        Container:
+            name: required string,
+            Item plural Items:
+                value: required string,
+                @(value)
+            ;,
+            @(name)
+        ;
+    .
+    "#,
+    );
+}

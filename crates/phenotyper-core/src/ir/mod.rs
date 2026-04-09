@@ -44,6 +44,9 @@ pub struct PhenotypeType {
     pub plural_name: Option<String>,
     pub fields: Vec<FieldDef>,
     pub render: Vec<RenderNode>,
+    /// If this is a nested phenotype that references parent fields,
+    /// this holds the parent type name for `render_with_parent` codegen.
+    pub parent_context: Option<String>,
 }
 
 /// A lowered field definition with resolved type and cardinality.
@@ -80,6 +83,13 @@ pub enum RenderNode {
     Text(String),
     /// Emit a field value: `@(field)`.
     Emit(FieldId),
+    /// Emit a parent-scoped field: `@(Parent/field)`.
+    ParentFieldRef {
+        /// The parent type name (e.g., `"JavaClass"`).
+        parent_type: String,
+        /// The field name in the parent (e.g., `"name"`).
+        field_name: String,
+    },
     /// Join a collection with a separator: `@join(field, separator)`.
     Join {
         field: FieldId,

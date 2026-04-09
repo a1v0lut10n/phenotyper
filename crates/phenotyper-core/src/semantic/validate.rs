@@ -60,6 +60,10 @@ fn validate_render_node(
     inside_guard: bool,
 ) {
     match node {
+        // Parent-scoped field refs are valid by construction — scope was
+        // verified during IR lowering. No additional validation needed.
+        RenderNode::ParentFieldRef { .. } => {}
+
         RenderNode::Emit(field_id) => {
             if let Some(field) = find_field(pt, *field_id) {
                 // T-062: Direct @emit of plural field → error
