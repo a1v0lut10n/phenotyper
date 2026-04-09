@@ -42,7 +42,8 @@ pub fn lower_module(
                     lower_type_decl(td, table, file, &mut diags, &mut enums, &mut aliases);
                 }
                 ast::TopLevelDecl::TypeDef(td) => {
-                    if let Some(pt) = lower_type_def(td, table, file, &mut diags, &mut types) {
+                    if let Some(pt) = lower_type_def(td, table, file, &mut diags, &mut types, None)
+                    {
                         types.push(pt);
                     }
                 }
@@ -101,12 +102,16 @@ fn lower_type_decl(
 ///
 /// Nested phenotype definitions (BodyItem::NestedType) are recursively lowered
 /// and flattened into the `extra_types` output vec — the IR is always flat.
+///
+/// `parent_name` is `Some("ParentType")` when lowering a nested phenotype inside
+/// `ParentType`, enabling `@(Parent/field)` → `ParentFieldRef` resolution.
 fn lower_type_def(
     def: &ast::TypeDef,
     table: &SymbolTable,
     file: &str,
     diags: &mut Vec<Diagnostic>,
     extra_types: &mut Vec<PhenotypeType>,
+    parent_name: Option<&str>,
 ) -> Option<PhenotypeType> {
     let type_id = match table.resolve(&def.name) {
         Some(Symbol::Phenotype(id)) => *id,
@@ -127,24 +132,39 @@ fn lower_type_def(
         }
     }
 
-    // Recursively lower nested phenotype definitions (flattened into extra_types)
+    // Recursively lower nested phenotype definitions (pass current name as parent)
     for item in &def.items {
         if let ast::BodyItem::NestedType(nt) | ast::BodyItem::NestedTypePlural(nt) = item {
-            if let Some(nested_pt) = lower_type_def(&nt.nested, table, file, diags, extra_types) {
+            if let Some(nested_pt) =
+                lower_type_def(&nt.nested, table, file, diags, extra_types, Some(&def.name))
+            {
                 extra_types.push(nested_pt);
             }
         }
     }
 
-    // Lower render expressions (pass fields for ? desugaring)
+    // Lower render expressions (pass fields for ? desugaring, parent for scoped refs)
     let mut render = Vec::new();
+    let mut has_parent_refs = false;
     for item in &def.items {
         if let ast::BodyItem::Render(r) = item {
-            if let Some(node) = lower_render_expr(&r.render, type_id, &fields, table, file, diags) {
+            if let Some(node) =
+                lower_render_expr(&r.render, type_id, &fields, table, file, diags, parent_name)
+            {
+                if matches!(node, RenderNode::ParentFieldRef { .. }) {
+                    has_parent_refs = true;
+                }
                 render.push(node);
             }
         }
     }
+
+    // Set parent_context if this nested type actually uses parent field refs
+    let parent_context = if has_parent_refs {
+        parent_name.map(|s| s.to_string())
+    } else {
+        None
+    };
 
     Some(PhenotypeType {
         id: type_id,
@@ -152,6 +172,7 @@ fn lower_type_def(
         plural_name,
         fields,
         render,
+        parent_context,
     })
 }
 
@@ -302,10 +323,21 @@ fn lower_render_expr(
     table: &SymbolTable,
     file: &str,
     diags: &mut Vec<Diagnostic>,
+    _parent_name: Option<&str>,
 ) -> Option<RenderNode> {
     match expr {
-        // @(field) or @(Parent/field) → Emit(field_id)
+        // @(field) → Emit(field_id)
+        // @(Parent/field) → ParentFieldRef { parent_type, field_name }
         ast::RenderExpr::FieldRef(fr) => {
+            if fr.ref_path.segments.len() == 2 {
+                // Scoped parent reference: @(Parent/field)
+                let scope = &fr.ref_path.segments[0];
+                let field_name = &fr.ref_path.segments[1];
+                return Some(RenderNode::ParentFieldRef {
+                    parent_type: scope.clone(),
+                    field_name: field_name.clone(),
+                });
+            }
             let field_name = resolve_field_path_name(&fr.ref_path, file, diags)?;
             let field_id = resolve_field_id(&field_name, type_id, table, file, diags)?;
             Some(RenderNode::Emit(field_id))
@@ -452,7 +484,7 @@ fn lower_conditional_ref(
     let body = if let Some(ref block) = cr.block {
         let mut nodes = Vec::new();
         for item in &block.items {
-            if let Some(node) = lower_render_expr(item, type_id, fields, table, file, diags) {
+            if let Some(node) = lower_render_expr(item, type_id, fields, table, file, diags, None) {
                 nodes.push(node);
             }
         }
@@ -519,7 +551,7 @@ fn lower_conditional_directive(
                     let mut nodes = Vec::new();
                     for item in &block.items {
                         if let Some(node) =
-                            lower_render_expr(item, type_id, fields, table, file, diags)
+                            lower_render_expr(item, type_id, fields, table, file, diags, None)
                         {
                             nodes.push(node);
                         }
@@ -568,7 +600,7 @@ fn lower_block_body(
         for item in &body.items {
             // Block bodies inside @ifset/@ifnotempty don't need fields for ? desugaring
             // (nested ? is allowed but rare — pass empty slice)
-            if let Some(node) = lower_render_expr(item, type_id, &[], table, file, diags) {
+            if let Some(node) = lower_render_expr(item, type_id, &[], table, file, diags, None) {
                 nodes.push(node);
             }
         }
