@@ -228,14 +228,14 @@ then `?` operator (self-contained), then nesting (most complex).
 
 ### Documentation
 
-- [ ] **T-270**: Update `docs/howto/authoring_phenotypes.md` — add v2 syntax
+- [x] **T-270**: Update `docs/howto/authoring_phenotypes.md` — add v2 syntax
   (structural namespaces, nesting, `?` operator).
-- [ ] **T-271**: Update `docs/howto/using_generated_code.md` — add
+- [x] **T-271**: Update `docs/howto/using_generated_code.md` — add
   `render_with_parent` API for nested phenotypes.
-- [ ] **T-272**: Update `docs/howto/compiler_usage.md` — add `migrate` subcommand.
-- [ ] **T-273**: Update `docs/howto/build_rs_integration.md` — v2 syntax examples.
-- [ ] **T-274**: Update `README.md` — v2 feature summary, updated examples.
-- [ ] **T-275**: Update v2 examples — ensure `docs/examples/` use v2 syntax:
+- [x] **T-272**: Update `docs/howto/compiler_usage.md` — add `migrate` subcommand.
+- [x] **T-273**: Update `docs/howto/build_rs_integration.md` — v2 syntax examples.
+- [x] **T-274**: Update `README.md` — v2 feature summary, updated examples.
+- [x] **T-275**: Update v2 examples — ensure `docs/examples/` use v2 syntax:
   - `csv.md` / `csv.pht`
   - `prompt.md`
   - `config.md`
@@ -244,10 +244,10 @@ then `?` operator (self-contained), then nesting (most complex).
 
 ### Quality
 
-- [ ] **T-276**: Run `cargo clippy` — clean all warnings.
-- [ ] **T-277**: Run full test suite — all tests pass.
-- [ ] **T-278**: Bump version to `0.2.0` in all `Cargo.toml` files.
-- [ ] **T-279**: Tag `v0.2.0` release.
+- [x] **T-276**: Run `cargo clippy` — clean all warnings.
+- [x] **T-277**: Run full test suite — all tests pass.
+- [x] **T-278**: Bump version to `0.2.0` in all `Cargo.toml` files.
+- [x] **T-279**: Tag `v0.2.0` release.
 
 **Requirements covered:** Cross-cutting.
 
