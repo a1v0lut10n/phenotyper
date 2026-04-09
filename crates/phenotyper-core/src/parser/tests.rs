@@ -389,6 +389,105 @@ fn parse_conditional_ref_on_required() {
     assert!(result.is_ok(), "? on required should parse: {result:?}");
 }
 
+// --- Nested phenotype tests (v2) ---
+
+#[test]
+fn parse_nested_phenotype() {
+    let source = r#"
+        test/types:
+        Parent:
+            name: required string,
+            Child:
+                value: required string,
+                @(value)
+            ;,
+            @(name)
+        ;
+    .
+    "#;
+    let result = parse_pht(source, "test.pht");
+    assert!(result.is_ok(), "nested phenotype failed: {result:?}");
+}
+
+#[test]
+fn parse_nested_two_levels() {
+    let source = r#"
+        test/types:
+        GrandParent:
+            name: required string,
+            Parent:
+                value: required string,
+                Child:
+                    count: required int64,
+                    @(count)
+                ;,
+                @(value)
+            ;,
+            @(name)
+        ;
+    .
+    "#;
+    let result = parse_pht(source, "test.pht");
+    assert!(result.is_ok(), "two-level nesting failed: {result:?}");
+}
+
+#[test]
+fn parse_scoped_field_ref() {
+    let source = r#"
+        test/types:
+        Parent:
+            name: required string,
+            Child:
+                value: required string,
+                @(Parent/name), @(value)
+            ;,
+            @(name)
+        ;
+    .
+    "#;
+    let result = parse_pht(source, "test.pht");
+    assert!(result.is_ok(), "scoped field ref failed: {result:?}");
+}
+
+#[test]
+fn parse_nested_with_plural() {
+    let source = r#"
+        test/types:
+        Container:
+            name: required string,
+            Item plural Items:
+                value: required string,
+                @(value)
+            ;,
+            @(name)
+        ;
+    .
+    "#;
+    let result = parse_pht(source, "test.pht");
+    assert!(result.is_ok(), "nested with plural failed: {result:?}");
+}
+
+#[test]
+fn parse_nested_mixed_body() {
+    // Fields, nested types, and render exprs interleaved
+    let source = r#"
+        test/types:
+        Report:
+            title: required string,
+            Section plural Sections:
+                heading: required string,
+                @(heading)
+            ;,
+            footer: optional string,
+            @(title),
+            @(footer)? { @(footer) }
+        ;
+    .
+    "#;
+    let result = parse_pht(source, "test.pht");
+    assert!(result.is_ok(), "mixed body failed: {result:?}");
+}
+
 // --- Negative tests ---
 
 #[test]

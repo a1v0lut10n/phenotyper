@@ -64,6 +64,10 @@ fn resolve_type_def(
             ast::BodyItem::Render(r) => {
                 resolve_render_expr(&r.render, type_name, type_id, table, file, diags);
             }
+            ast::BodyItem::NestedType(nt) | ast::BodyItem::NestedTypePlural(nt) => {
+                // Recursively resolve references in nested phenotype
+                resolve_type_def(&nt.nested, table, file, diags);
+            }
         }
     }
 }
@@ -132,7 +136,10 @@ fn resolve_render_expr(
 ) {
     match expr {
         ast::RenderExpr::FieldRef(fr) => {
-            check_field_ref(&fr.ref_name, type_name, type_id, table, file, diags);
+            // Use last segment of path for field resolution
+            if let Some(field_name) = fr.ref_path.segments.last() {
+                check_field_ref(field_name, type_name, type_id, table, file, diags);
+            }
         }
         ast::RenderExpr::Directive(d) => {
             // Resolve field references in directive arguments
@@ -145,8 +152,10 @@ fn resolve_render_expr(
             // String literals have no references
         }
         ast::RenderExpr::ConditionalRef(cr) => {
-            // Resolve the field name in @(field)?
-            check_field_ref(&cr.ref_name, type_name, type_id, table, file, diags);
+            // Resolve the field name in @(field)? — use last segment
+            if let Some(field_name) = cr.ref_path.segments.last() {
+                check_field_ref(field_name, type_name, type_id, table, file, diags);
+            }
             // Resolve refs in optional block body
             if let Some(ref block) = cr.block {
                 for item in &block.items {

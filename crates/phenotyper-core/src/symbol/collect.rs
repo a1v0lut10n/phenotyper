@@ -194,6 +194,13 @@ fn collect_type_def(
             .names
             .insert(plural_name, Symbol::PluralCompanion { type_id });
     }
+
+    // Recursively collect nested phenotype definitions
+    for item in &def.items {
+        if let ast::BodyItem::NestedType(nt) | ast::BodyItem::NestedTypePlural(nt) = item {
+            collect_type_def(&nt.nested, file, diags, table);
+        }
+    }
 }
 
 /// Flatten the recursive `EnumMembers` structure to a flat `Vec<String>`.

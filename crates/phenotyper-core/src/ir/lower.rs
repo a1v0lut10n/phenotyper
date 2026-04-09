@@ -42,7 +42,7 @@ pub fn lower_module(
                     lower_type_decl(td, table, file, &mut diags, &mut enums, &mut aliases);
                 }
                 ast::TopLevelDecl::TypeDef(td) => {
-                    if let Some(pt) = lower_type_def(td, table, file, &mut diags) {
+                    if let Some(pt) = lower_type_def(td, table, file, &mut diags, &mut types) {
                         types.push(pt);
                     }
                 }
@@ -98,11 +98,15 @@ fn lower_type_decl(
 }
 
 /// Lower a phenotype type definition.
+///
+/// Nested phenotype definitions (BodyItem::NestedType) are recursively lowered
+/// and flattened into the `extra_types` output vec — the IR is always flat.
 fn lower_type_def(
     def: &ast::TypeDef,
     table: &SymbolTable,
     file: &str,
     diags: &mut Vec<Diagnostic>,
+    extra_types: &mut Vec<PhenotypeType>,
 ) -> Option<PhenotypeType> {
     let type_id = match table.resolve(&def.name) {
         Some(Symbol::Phenotype(id)) => *id,
@@ -119,6 +123,15 @@ fn lower_type_def(
         if let ast::BodyItem::Field(f) = item {
             if let Some(field_def) = lower_field_decl(&f.field, type_id, table, file, diags) {
                 fields.push(field_def);
+            }
+        }
+    }
+
+    // Recursively lower nested phenotype definitions (flattened into extra_types)
+    for item in &def.items {
+        if let ast::BodyItem::NestedType(nt) | ast::BodyItem::NestedTypePlural(nt) = item {
+            if let Some(nested_pt) = lower_type_def(&nt.nested, table, file, diags, extra_types) {
+                extra_types.push(nested_pt);
             }
         }
     }
@@ -263,6 +276,24 @@ fn lower_union_type(
     ValueType::Union(flat)
 }
 
+/// Extract the field name from a `FieldPath`.
+///
+/// For single-segment paths like `@(name)`, returns `"name"`.
+/// For multi-segment scoped paths like `@(Parent/field)`, returns `"field"` —
+/// the scope qualifier is resolved separately during symbol resolution.
+fn resolve_field_path_name(
+    path: &ast::FieldPath,
+    file: &str,
+    diags: &mut Vec<Diagnostic>,
+) -> Option<String> {
+    if path.segments.is_empty() {
+        diags.push(super::error(file, "empty field path".to_string()));
+        return None;
+    }
+    // Return the last segment as the field name
+    Some(path.segments.last().unwrap().clone())
+}
+
 /// Lower a render expression to an IR `RenderNode`.
 fn lower_render_expr(
     expr: &ast::RenderExpr,
@@ -273,9 +304,10 @@ fn lower_render_expr(
     diags: &mut Vec<Diagnostic>,
 ) -> Option<RenderNode> {
     match expr {
-        // @(field) → Emit(field_id)
+        // @(field) or @(Parent/field) → Emit(field_id)
         ast::RenderExpr::FieldRef(fr) => {
-            let field_id = resolve_field_id(&fr.ref_name, type_id, table, file, diags)?;
+            let field_name = resolve_field_path_name(&fr.ref_path, file, diags)?;
+            let field_id = resolve_field_id(&field_name, type_id, table, file, diags)?;
             Some(RenderNode::Emit(field_id))
         }
 
@@ -413,7 +445,8 @@ fn lower_conditional_ref(
     file: &str,
     diags: &mut Vec<Diagnostic>,
 ) -> Option<RenderNode> {
-    let field_id = resolve_field_id(&cr.ref_name, type_id, table, file, diags)?;
+    let field_name = resolve_field_path_name(&cr.ref_path, file, diags)?;
+    let field_id = resolve_field_id(&field_name, type_id, table, file, diags)?;
 
     // Determine body: if block is present, lower it; else default to [Emit(field)]
     let body = if let Some(ref block) = cr.block {

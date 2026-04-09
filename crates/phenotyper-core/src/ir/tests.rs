@@ -684,3 +684,81 @@ fn conditional_join_block_desugars_with_body() {
         other => panic!("expected IfNotEmpty with body, got {other:?}"),
     }
 }
+
+// ─── Nested phenotype flattening ────────────────────────────────────────────
+
+#[test]
+fn nested_type_is_flattened_to_module() {
+    let module = lower_ok(
+        r#"
+        test/types:
+        Parent:
+            name: required string,
+            Child:
+                value: required string,
+                @(value)
+            ;,
+            @(name)
+        ;
+    .
+    "#,
+    );
+    // Nested types are flattened before parent (DFS order: Child, then Parent)
+    assert_eq!(module.types.len(), 2);
+    assert_eq!(module.types[0].singular_name, "Child");
+    assert_eq!(module.types[1].singular_name, "Parent");
+}
+
+#[test]
+fn nested_type_has_own_fields_and_render() {
+    let module = lower_ok(
+        r#"
+        test/types:
+        Parent:
+            name: required string,
+            Child:
+                value: required string,
+                @(value)
+            ;,
+            @(name)
+        ;
+    .
+    "#,
+    );
+    let child = &module.types[0]; // Child comes first (nested before parent)
+    assert_eq!(child.fields.len(), 1);
+    assert_eq!(child.fields[0].name, "value");
+    assert_eq!(child.render.len(), 1);
+    assert!(matches!(child.render[0], RenderNode::Emit(_)));
+}
+
+#[test]
+fn two_level_nesting_flattens_all() {
+    let module = lower_ok(
+        r#"
+        test/types:
+        A:
+            x: required string,
+            B:
+                y: required string,
+                C:
+                    z: required int64,
+                    @(z)
+                ;,
+                @(y)
+            ;,
+            @(x)
+        ;
+    .
+    "#,
+    );
+    assert_eq!(module.types.len(), 3);
+    let names: Vec<_> = module
+        .types
+        .iter()
+        .map(|t| t.singular_name.as_str())
+        .collect();
+    assert!(names.contains(&"A"));
+    assert!(names.contains(&"B"));
+    assert!(names.contains(&"C"));
+}

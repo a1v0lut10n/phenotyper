@@ -50,11 +50,11 @@ PluralClause: 'plural' plural_name=Ident;
 // Body items (fields and render expressions)
 // ---------------------------------------------------------------------------
 
-BodyItem: field=FieldDecl {Field}
+BodyItem: name=Ident plural_clause=PluralClause ':' items=BodyItem+[Comma] ';' {NestedTypePlural}
+        | name=Ident ':' items=BodyItem+[Comma] ';' {NestedType}
+        | name=Ident ':' req=Requiredness type_expr=TypeExpr {Field}
         | render=RenderExpr {Render}
         ;
-
-FieldDecl: name=Ident ':' req=Requiredness type_expr=TypeExpr;
 
 Requiredness: 'required' {Req} | 'optional' {Opt};
 
@@ -86,10 +86,12 @@ TypeName: name=Ident {UserDefined}
 RenderExpr: '@' name=Ident suffix=DirectiveSuffix '?' block=BlockBody? {ConditionalDirective}
           | '@' name=Ident suffix=DirectiveSuffix {Directive}
           | '@' name=Ident {BareDirective}
-          | '@' '(' ref_name=Ident ')' '?' block=BlockBody? {ConditionalRef}
-          | '@' '(' ref_name=Ident ')' {FieldRef}
+          | '@' '(' ref_path=FieldPath ')' '?' block=BlockBody? {ConditionalRef}
+          | '@' '(' ref_path=FieldPath ')' {FieldRef}
           | value=StringLiteral {StringLit}
           ;
+
+FieldPath: segments=Ident+[Slash];
 
 DirectiveSuffix: '(' args=Argument+[Comma] ')' block=BlockBody? {WithArgs}
                | '(' ')' block=BlockBody? {EmptyParen}

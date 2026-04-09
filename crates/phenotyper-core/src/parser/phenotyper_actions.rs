@@ -219,12 +219,48 @@ pub struct Render {
     pub render: RenderExpr,
 }
 #[derive(Debug, Clone)]
+pub struct NestedType {
+    pub nested: TypeDef,
+}
+#[derive(Debug, Clone)]
 pub enum BodyItem {
     Field(Field),
     Render(Render),
+    NestedTypePlural(NestedType),
+    NestedType(NestedType),
 }
-pub fn body_item_field(_ctx: &Ctx, field: FieldDecl) -> BodyItem {
-    BodyItem::Field(Field { field })
+pub fn body_item_nested_type_plural(
+    _ctx: &Ctx,
+    name: Ident,
+    plural_clause: PluralClause,
+    items: BodyItem1,
+) -> BodyItem {
+    BodyItem::NestedTypePlural(NestedType {
+        nested: TypeDef {
+            name,
+            plural_clause: Some(plural_clause),
+            items,
+        },
+    })
+}
+pub fn body_item_nested_type(_ctx: &Ctx, name: Ident, items: BodyItem1) -> BodyItem {
+    BodyItem::NestedType(NestedType {
+        nested: TypeDef {
+            name,
+            plural_clause: None,
+            items,
+        },
+    })
+}
+pub fn body_item_field(
+    _ctx: &Ctx,
+    name: Ident,
+    req: Requiredness,
+    type_expr: TypeExpr,
+) -> BodyItem {
+    BodyItem::Field(Field {
+        field: FieldDecl { name, req, type_expr },
+    })
 }
 pub fn body_item_render(_ctx: &Ctx, render: RenderExpr) -> BodyItem {
     BodyItem::Render(Render { render })
@@ -359,7 +395,7 @@ pub struct BareDirective {
 }
 #[derive(Debug, Clone)]
 pub struct FieldRef {
-    pub ref_name: Ident,
+    pub ref_path: FieldPath,
 }
 #[derive(Debug, Clone)]
 pub struct StringLit {
@@ -367,7 +403,7 @@ pub struct StringLit {
 }
 #[derive(Debug, Clone)]
 pub struct ConditionalRef {
-    pub ref_name: Ident,
+    pub ref_path: FieldPath,
     pub block: BlockBodyOpt,
 }
 #[derive(Debug, Clone)]
@@ -409,16 +445,23 @@ pub fn render_expr_bare_directive(_ctx: &Ctx, name: Ident) -> RenderExpr {
 }
 pub fn render_expr_conditional_ref(
     _ctx: &Ctx,
-    ref_name: Ident,
+    ref_path: FieldPath,
     block: BlockBodyOpt,
 ) -> RenderExpr {
-    RenderExpr::ConditionalRef(ConditionalRef { ref_name, block })
+    RenderExpr::ConditionalRef(ConditionalRef { ref_path, block })
 }
-pub fn render_expr_field_ref(_ctx: &Ctx, ref_name: Ident) -> RenderExpr {
-    RenderExpr::FieldRef(FieldRef { ref_name })
+pub fn render_expr_field_ref(_ctx: &Ctx, ref_path: FieldPath) -> RenderExpr {
+    RenderExpr::FieldRef(FieldRef { ref_path })
 }
 pub fn render_expr_string_lit(_ctx: &Ctx, value: StringLiteral) -> RenderExpr {
     RenderExpr::StringLit(StringLit { value })
+}
+#[derive(Debug, Clone)]
+pub struct FieldPath {
+    pub segments: Ident1,
+}
+pub fn field_path_c1(_ctx: &Ctx, segments: Ident1) -> FieldPath {
+    FieldPath { segments }
 }
 #[derive(Debug, Clone)]
 pub struct WithArgs {
