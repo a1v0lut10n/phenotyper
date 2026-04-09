@@ -44,9 +44,7 @@ pub fn parse_pht(source: &str, file: &str) -> Result<phenotyper_actions::File, V
 
     forest
         .get_first_tree()
-        .map(|tree| {
-            tree.build(&mut phenotyper::DefaultBuilder::new())
-        })
+        .map(|tree| tree.build(&mut phenotyper::DefaultBuilder::new()))
         .ok_or_else(|| {
             vec![Diagnostic {
                 severity: crate::diagnostic::Severity::Error,
@@ -101,9 +99,7 @@ pub fn parse_md(markdown: &str, file: &str) -> Result<phenotyper_actions::File, 
 
     forest
         .get_first_tree()
-        .map(|tree| {
-            tree.build(&mut phenotyper::DefaultBuilder::new())
-        })
+        .map(|tree| tree.build(&mut phenotyper::DefaultBuilder::new()))
         .ok_or_else(|| {
             vec![Diagnostic {
                 severity: crate::diagnostic::Severity::Error,

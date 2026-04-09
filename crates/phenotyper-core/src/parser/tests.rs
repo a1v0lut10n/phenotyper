@@ -283,7 +283,10 @@ fn parse_single_segment_namespace() {
     // GLR: single-segment namespace should be disambiguated from phenotype
     let source = "csv: .";
     let result = parse_pht(source, "test.pht");
-    assert!(result.is_ok(), "single-segment namespace parse failed: {result:?}");
+    assert!(
+        result.is_ok(),
+        "single-segment namespace parse failed: {result:?}"
+    );
 }
 
 #[test]
@@ -307,7 +310,10 @@ Record:
 ```
 "#;
     let result = parse_md(md, "example.md");
-    assert!(result.is_ok(), "md without trailing dot should parse: {result:?}");
+    assert!(
+        result.is_ok(),
+        "md without trailing dot should parse: {result:?}"
+    );
 }
 
 // --- Negative tests ---
