@@ -1,6 +1,6 @@
-# Phenotype for the generation of java classes
+# Phenotype for the generation of Java classes
 
-Code will be generated in the java/generation namespace.
+Code will be generated in the `java/generation` namespace.
 
 ```pht
 java/generation:
@@ -9,121 +9,56 @@ java/generation:
 ## Enumeration of Java visibility specifiers
 
 ```pht
-Visibility:
-    [public, protected, private];
+type Visibility: [public, protected, private];
 ```
 
 ## Data type to represent a typed argument
 
 ```pht
 Argument plural Arguments:
-    type: required string,
-    name: required string;
+    typeName: required string,
+    name: required string,
+    @(typeName), " ", @(name)
+;
 ```
 
 ## Data type to represent a method signature
 
 ```pht
 MethodSignature plural MethodSignatures:
-    methodName: key string,
+    methodName: required string,
     visibility: required Visibility,
     returnType: required string,
-    argument plural arguments: Arguments;
+    argList: optional string,
+    @(visibility), " ", @(returnType), " ", @(methodName),
+    "(", @(argList)?, ")"
+;
 ```
 
-## Template for Java Interfaces
+## Template for Java classes
 
-~~~~pht
-Interface plural Interfaces:
-    name: key string,
-    superInterface plural superInterfaces: Interfaces,
-    methodSignature plural methodSignatures: MethodSignatures,
+A `JavaClass` contains an optional superclass, optional methods, and
+a nested `Constructor` type that can reference the parent class name.
 
-    @(1,100):
-        @"public interface", @(name),
-        ifnotempty(superInterfaces):
-            @" extends ",
-            for_each(superInterface):
-                @(superInterface/name),
-                ifmore(superInterfaces):
-                    @", "
-                ;
-            ;
-        ;
-        @space, @"{", @eol,
-
-        foreach(methodSignature):
-            @(+1,100):
-                @(methodSignature/visibility), @space, 
-                @(methodSignature/returnType), @space,
-                @(methodSignature/methodName),
-                @"(",
-                foreach(methodSignature/argument):
-                    methodSignature/argument/type, @space,
-                    methodSignature/argument/name,
-                    ifmore(methodSignature/arguments):
-                        @", "
-                    ;
-                ;
-                @");", @eol
-            ;
-        @"}", @eol
-    ;
-;
-~~~~
-
-## Template for java classes
-
-~~~~pht
+```pht
 JavaClass plural JavaClasses:
-    name: key string,
-    interface plural interfaces: optional Interfaces,
-    superClass: optional JavaClass,
-    methodSignature plural methodSignatures: optional MethodSignatures,
+    name: required string,
+    visibility: required Visibility,
+    superClass: optional string,
 
-    @(1,100):
-        @"public class ", @(name), @space(1),
-        ifnotempty(interfaces):
-            @"implements ",
-            foreach(interface):
-                @(interface/name),
-                ifmore(interfaces):
-                    @", "
-                ;
-            ;
-        ;
-        @eol,
-        ifset(superClass):
-            @(+1,100):
-                @" extends ", @(superClass/name), @space
-            ;
-        ;
+    Constructor plural Constructors:
+        argList: optional string,
+        @(JavaClass/name), "(", @(argList)?, ")"
+    ;,
 
-        ## Embedded template for Java class constructors.
-        Constructor plural Constructors:
-            visibility: required Visibility,
-            argument plural arguments: optional Arguments,
+    ctors: required Constructors,
+    methods: optional MethodSignatures,
 
-            @(+1,100):
-                @(visibility), @space, @(JavaClass/name), @"(",
-                foreach(argument):
-                    @(argument/type), @space, @(argument/name),
-                    ifmore(arguments):
-                        @", "
-                    ;
-                ;
-                @") {", @eol
-
-                @"}", @eol
-            ;
-        ;
-
-        ## Methods
-        methodSignatures?
-            foreach(methodSignature):
-                @(methodSignature/visibility) @(methodSignature/name)
-                // TODO hvwesenbeeck@aivolution.com: complete
-
-    ;
-.
-~~~~
+    @(visibility), " class ", @(name),
+    @ifset(superClass) { " extends ", @(superClass) },
+    " {", @eol,
+    @join(ctors, "\n"),
+    @ifnotempty(methods) { @eol, @join(methods, "\n") },
+    @eol, "}"
+;
+```

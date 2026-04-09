@@ -26,7 +26,7 @@ Or, once published:
 
 ```toml
 [build-dependencies]
-phenotyper-core = "0.1"
+phenotyper-core = "0.2"
 ```
 
 ### 2. Create a `build.rs`

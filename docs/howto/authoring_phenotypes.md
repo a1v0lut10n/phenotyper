@@ -13,7 +13,7 @@ Parsed directly as the core language. Best for machine-generated sources
 and code-centric workflows.
 
 ```pht
-namespace aivolution/format/csv;
+aivolution/format/csv:
 
 type ScalarValue: {int64, real64, string, date, time, datetime};
 
@@ -21,6 +21,8 @@ CSVFieldValue plural CSVFieldValues:
     value: required ScalarValue,
     @(value)
 ;
+
+.
 ```
 
 ### `.md` — Markdown with Embedded Phenotyper
@@ -35,7 +37,7 @@ blocks in document order.
 This describes the format.
 
 ```pht
-namespace my/format;
+my/format:
 ```
 
 ## Records
@@ -45,6 +47,8 @@ Record:
     name: required string,
     @(name)
 ;
+
+.
 ```
 ````
 
@@ -54,14 +58,22 @@ source file.
 
 ## Namespace Declaration
 
-Every phenotyper file must begin with a namespace declaration:
+Every phenotyper file must begin with a structural namespace declaration
+followed by a colon. The file must end with a `.` terminator:
 
 ```pht
-namespace aivolution/format/csv;
+aivolution/format/csv:
+
+// ... type and phenotype declarations ...
+
+.
 ```
 
 The namespace determines the output directory structure when code is
 generated (e.g., `aivolution/format/csv/mod.rs`).
+
+> **Note:** The v1 `namespace` keyword syntax is no longer supported.
+> Use the structural `path/to/namespace:` form instead.
 
 ## Type Declarations
 
@@ -150,6 +162,36 @@ The plural companion (`Records`) generates a wrapper struct around
 `Vec<Record>` with collection helpers (`new()`, `from_vec()`,
 `push()`, `iter()`, `len()`, `as_slice()`).
 
+### Nested Phenotype Declarations
+
+A phenotype body can contain other phenotype declarations in addition
+to fields and render expressions. This is useful for modeling hierarchical
+structures where a child type is logically part of a parent.
+
+```pht
+JavaClass plural JavaClasses:
+    name: required string,
+
+    Constructor plural Constructors:
+        argList: optional string,
+        @(JavaClass/name), "(", @(argList)?, ")"
+    ;,
+
+    ctors: required Constructors,
+
+    "class ", @(name), " {", @eol,
+    @join(ctors, "\n"),
+    "}"
+;
+```
+
+Key points:
+- Nested types are terminated with `;,` (semicolon-comma) inside the
+  parent body
+- Nested types are flattened into independent Rust structs at compile time
+- Nested types can reference parent fields using scoped paths (see below)
+- Nested types can declare plurals like any top-level phenotype
+
 ## Fields
 
 ### Requiredness
@@ -184,6 +226,36 @@ Render expressions define how a phenotype instance is transformed to text.
 ```
 
 Emits the rendered value of the field.
+
+### Parent-Scoped Field References
+
+When inside a nested phenotype, you can reference fields from the parent
+type using a scoped path:
+
+```pht
+@(ParentType/field_name)
+```
+
+For example, `@(JavaClass/name)` inside a `Constructor` accesses the
+`name` field of the containing `JavaClass`. This generates a
+`render_with_parent` method instead of the standard `render_into`.
+
+### Optional Field Shorthand (`?` suffix)
+
+The `?` operator provides a concise way to conditionally emit an optional
+field:
+
+```pht
+@(optional_field)?
+```
+
+This is equivalent to:
+
+```pht
+@ifset(optional_field) { @(optional_field) }
+```
+
+The field renders only when its value is `Some(...)`.
 
 ### Text Literals
 
@@ -257,3 +329,7 @@ and is ignored by the compiler.
    embed design rationale alongside the definitions.
 6. **Use `.pht` for generated sources**: Pure files are simpler for
    machine-to-machine workflows.
+7. **Use nesting for logically contained types**: If a child type only
+   makes sense in the context of its parent, declare it nested.
+8. **Use `?` for simple optional emission**: `@(field)?` is more readable
+   than `@ifset(field) { @(field) }` for single-field conditionals.

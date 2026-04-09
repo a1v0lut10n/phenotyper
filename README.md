@@ -68,10 +68,9 @@ Phenotyper supports documentation-rich source documents in Markdown. Phenotype c
 This family models a CSV-like format.
 
 ```pht
-namespace aivolution/format/csv;
-uses aivolution/core/time;
+aivolution/format/csv:
 
-type ScalarValue: {int64, real64, string, Date, Time, Datetime};
+type ScalarValue: {int64, real64, string, date, time, datetime};
 type Visibility: [public, protected, private];
 
 CSVFieldValue plural CSVFieldValues:
@@ -81,20 +80,21 @@ CSVFieldValue plural CSVFieldValues:
 
 CSVLine plural CSVLines:
     values: required CSVFieldValues,
-    @join(values, @", "),
-    @eol()
+    separator: required string,
+    @join(values, separator)
 ;
+
+.
 ```
 ````
 
 ### Pure `.pht` source form
 
 ```pht
-namespace aivolution/format/csv;
-uses aivolution/core/time;
+aivolution/format/csv:
 
 // Reusable union-like type
-type ScalarValue: {int64, real64, string, Date, Time, Datetime};
+type ScalarValue: {int64, real64, string, date, time, datetime};
 
 /* Closed symbolic enum type */
 type Visibility: [public, protected, private];
@@ -103,33 +103,31 @@ CSVFieldValue plural CSVFieldValues:
     value: required ScalarValue,
     @(value)
 ;
+
+.
 ```
 
 ---
 
 ## Language highlights
 
-### Namespaces
+### Structural Namespaces
 
-Phenotyper uses `/` as its namespace separator.
+Phenotyper uses structural namespace declarations with `/` as the
+path separator, terminated by `:` at the start and `.` at the end:
 
 ```pht
-namespace aivolution/format/csv;
+aivolution/format/csv:
+
+// ... declarations ...
+
+.
 ```
 
 This maps naturally to generated Rust modules:
 
 - DSL namespace: `aivolution/format/csv`
 - Rust module path: `aivolution::format::csv`
-
-### Imports with `uses`
-
-```pht
-uses aivolution/core/time;
-uses aivolution/core/types;
-```
-
-In v1, `uses some/namespace;` makes all declarations in that namespace visible for unqualified reference.
 
 ### Reusable named types
 
@@ -161,12 +159,34 @@ A phenotype can declare its plural companion explicitly:
 ```pht
 CSVLine plural CSVLines:
     values: required CSVFieldValues,
-    @join(values, @", "),
-    @eol()
+    separator: required string,
+    @join(values, separator)
 ;
 ```
 
 This makes the DSL more natural to read and allows code generation to preserve semantic collection types rather than collapsing everything into anonymous vectors.
+
+### Nested phenotype declarations
+
+Phenotype bodies can contain other phenotype declarations for modeling
+hierarchical structures:
+
+```pht
+JavaClass plural JavaClasses:
+    name: required string,
+
+    Constructor plural Constructors:
+        argList: optional string,
+        @(JavaClass/name), "(", @(argList)?, ")"
+    ;,
+
+    ctors: required Constructors,
+    "class ", @(name), " { ... }"
+;
+```
+
+Nested types reference parent fields with `@(Parent/field)` and are
+flattened into independent Rust structs at compile time.
 
 ### Render expressions
 
@@ -175,23 +195,15 @@ Phenotyper's output side is expressed through a small, explicit render-expressio
 Supported forms include:
 
 ```pht
-@"implements "
-@(field)
-@(field/subfield)
-@join(values, @", ")
-@eol()
-@eol("\n")
-@tab(1)
-@tab(2, 120)
+"literal text"            // verbatim output
+@(field)                  // field emission
+@(Parent/field)           // parent-scoped field reference
+@(optional_field)?        // optional field shorthand
+@join(values, ", ")       // join collection with separator
+@eol                      // end of line
+@ifset(field) { ... }     // conditional on optional field
+@ifnotempty(field) { ... } // conditional on non-empty collection
 ```
-
-These cover:
-- verbatim output
-- field emission
-- relative field-path emission
-- joining collections with a render-expression separator
-- line ending control
-- tabulation and layout hints
 
 ### Comments in pure `.pht`
 
@@ -312,7 +324,7 @@ That gives you both:
 For a CSV-like phenotype such as:
 
 ```pht
-namespace aivolution/format/csv;
+aivolution/format/csv:
 
 type ScalarValue: {int64, real64, string, date, time, datetime};
 

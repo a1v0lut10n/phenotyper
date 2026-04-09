@@ -218,6 +218,67 @@ match result {
 }
 ```
 
+## Nested Types with Parent Context
+
+When a nested phenotype references a parent field (e.g., `@(JavaClass/name)`),
+the compiler generates a `render_with_parent` method instead of using the
+standard `render_into` from the `Render` trait.
+
+### Generated API
+
+```rust
+impl Constructor {
+    pub fn render_with_parent(&self, parent: &JavaClass, out: &mut String) {
+        // Accesses parent.name for @(JavaClass/name)
+        out.push_str(&parent.name);
+        out.push_str("(");
+        // ... rest of render body
+    }
+}
+```
+
+The standard `Render` trait is still implemented, but calling `render_into`
+directly on a type that requires parent context will panic with a descriptive
+message:
+
+```rust
+// This panics:
+constructor.render();
+
+// Use render_with_parent instead:
+let mut buf = String::new();
+constructor.render_with_parent(&java_class, &mut buf);
+```
+
+### When is `render_with_parent` Generated?
+
+Only nested types that actually reference parent fields via `@(Parent/field)`
+paths get `render_with_parent`. Nested types that don't reference parent
+fields generate normal `render_into` like any top-level type.
+
+### Usage Example
+
+```rust
+let java_class = JavaClass {
+    name: "MyService".to_string(),
+    visibility: Visibility::Public,
+    super_class: None,
+    ctors: Constructors::from_vec(vec![
+        Constructor {
+            arg_list: Some("String name".to_string()),
+        },
+    ]),
+};
+
+// Render the parent (which may internally call render_with_parent on children)
+let output = java_class.render();
+
+// Or render a child manually with parent context
+let mut buf = String::new();
+java_class.ctors.items[0].render_with_parent(&java_class, &mut buf);
+// buf == "MyService(String name)"
+```
+
 ## Integration Tips
 
 1. **Add the generated module to your `mod.rs`** or use `include!`
@@ -225,3 +286,7 @@ match result {
 3. **All fields are `pub`** — you can read and modify them directly
 4. **`Clone` and `Debug` are derived** on all generated structs
 5. **`Default` is derived on plural wrappers** and builder structs
+6. **Nested types are flat in Rust** — they appear as independent structs,
+   not Rust nested types
+7. **Parent context is explicit** — use `render_with_parent` when the DSL
+   uses `@(Parent/field)` references
