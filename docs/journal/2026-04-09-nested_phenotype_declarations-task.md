@@ -28,6 +28,6 @@
 
 ## Phase 6: Integration
 - [x] T-266: nested_basic.pht fixture
-- [ ] T-267: javaclass.pht fixture
-- [ ] T-268: e2e tests
-- [ ] T-269: CLI tests
+- [x] T-267: javaclass.pht fixture
+- [x] T-268: e2e tests
+- [x] T-269: CLI tests
