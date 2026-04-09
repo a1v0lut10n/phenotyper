@@ -366,11 +366,36 @@ pub struct StringLit {
     pub value: StringLiteral,
 }
 #[derive(Debug, Clone)]
+pub struct ConditionalRef {
+    pub ref_name: Ident,
+    pub block: BlockBodyOpt,
+}
+#[derive(Debug, Clone)]
+pub struct ConditionalDirective {
+    pub name: Ident,
+    pub suffix: DirectiveSuffix,
+    pub block: BlockBodyOpt,
+}
+#[derive(Debug, Clone)]
 pub enum RenderExpr {
+    ConditionalDirective(ConditionalDirective),
     Directive(Directive),
     BareDirective(BareDirective),
+    ConditionalRef(ConditionalRef),
     FieldRef(FieldRef),
     StringLit(StringLit),
+}
+pub fn render_expr_conditional_directive(
+    _ctx: &Ctx,
+    name: Ident,
+    suffix: DirectiveSuffix,
+    block: BlockBodyOpt,
+) -> RenderExpr {
+    RenderExpr::ConditionalDirective(ConditionalDirective {
+        name,
+        suffix,
+        block,
+    })
 }
 pub fn render_expr_directive(
     _ctx: &Ctx,
@@ -381,6 +406,13 @@ pub fn render_expr_directive(
 }
 pub fn render_expr_bare_directive(_ctx: &Ctx, name: Ident) -> RenderExpr {
     RenderExpr::BareDirective(BareDirective { name })
+}
+pub fn render_expr_conditional_ref(
+    _ctx: &Ctx,
+    ref_name: Ident,
+    block: BlockBodyOpt,
+) -> RenderExpr {
+    RenderExpr::ConditionalRef(ConditionalRef { ref_name, block })
 }
 pub fn render_expr_field_ref(_ctx: &Ctx, ref_name: Ident) -> RenderExpr {
     RenderExpr::FieldRef(FieldRef { ref_name })

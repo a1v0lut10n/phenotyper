@@ -144,6 +144,26 @@ fn resolve_render_expr(
         ast::RenderExpr::StringLit(_) => {
             // String literals have no references
         }
+        ast::RenderExpr::ConditionalRef(cr) => {
+            // Resolve the field name in @(field)?
+            check_field_ref(&cr.ref_name, type_name, type_id, table, file, diags);
+            // Resolve refs in optional block body
+            if let Some(ref block) = cr.block {
+                for item in &block.items {
+                    resolve_render_expr(item, type_name, type_id, table, file, diags);
+                }
+            }
+        }
+        ast::RenderExpr::ConditionalDirective(cd) => {
+            // Resolve field references in directive arguments
+            resolve_directive_suffix(&cd.suffix, type_name, type_id, table, file, diags);
+            // Resolve refs in optional block body
+            if let Some(ref block) = cd.block {
+                for item in &block.items {
+                    resolve_render_expr(item, type_name, type_id, table, file, diags);
+                }
+            }
+        }
     }
 }
 

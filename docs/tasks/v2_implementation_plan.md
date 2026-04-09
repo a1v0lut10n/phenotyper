@@ -90,13 +90,13 @@ then `?` operator (self-contained), then nesting (most complex).
 
 ### Phase 1: Grammar & Parser
 
-- [ ] **T-230**: Update `phenotyper.rustemo` grammar:
+- [x] **T-230**: Update `phenotyper.rustemo` grammar:
   - Add `'?'` as `Question` terminal.
   - Add `ConditionalRef` production: `'@' '(' FieldPath ')' '?' BlockBody?`
   - Add `ConditionalDirective` production: `'@' Ident DirectiveSuffix '?' BlockBody?`
-- [ ] **T-231**: Update `phenotyper_actions.rs` — build `ConditionalRef` and
+- [x] **T-231**: Update `phenotyper_actions.rs` — build `ConditionalRef` and
   `ConditionalDirective` AST nodes.
-- [ ] **T-232**: Add parser unit tests for:
+- [x] **T-232**: Add parser unit tests for:
   - `@(field)?` — bare conditional field ref
   - `@(field)? { "prefix: ", @(field) }` — block conditional
   - `@join(tags, ", ")?` — conditional join (bare)
@@ -105,29 +105,29 @@ then `?` operator (self-contained), then nesting (most complex).
 
 ### Phase 2: AST & IR
 
-- [ ] **T-233**: Update `ast.rs` — add `ConditionalRef` and `ConditionalDirective`
+- [x] **T-233**: Update `ast.rs` — add `ConditionalRef` and `ConditionalDirective`
   to the `RenderExpr` enum.
-- [ ] **T-234**: Update `ir/lower.rs` — desugar `?` to existing IR nodes:
+- [x] **T-234**: Update `ir/lower.rs` — desugar `?` to existing IR nodes:
   - `@(field)?` on `optional` → `IfSet { field, body: [FieldRef(field)] }`
   - `@(field)? { body }` on `optional` → `IfSet { field, body }`
   - `@(field)?` on collection → `IfNotEmpty { field, body: [FieldRef(field)] }`
   - `@(field)? { body }` on collection → `IfNotEmpty { field, body }`
   - `@join(f, s)?` → `IfNotEmpty { f, body: [Join(f, s)] }`
-- [ ] **T-235**: Add IR lowering tests for all desugaring cases.
+- [x] **T-235**: Add IR lowering tests for all desugaring cases.
 
 ### Phase 3: Semantic Validation
 
-- [ ] **T-236**: Update `semantic/validate.rs` — emit warning diagnostic for:
+- [x] **T-236**: Update `semantic/validate.rs` — emit warning diagnostic for:
   - `?` on a `required` field (always present — redundant)
   - `?` on a `+` cardinality collection (never empty — redundant)
-- [ ] **T-237**: Add semantic validation tests for the warning cases.
+- [x] **T-237**: Add semantic validation tests for the warning cases.
 
 ### Phase 4: Integration
 
-- [ ] **T-238**: No codegen changes needed — desugaring happens at IR level, existing
+- [x] **T-238**: No codegen changes needed — desugaring happens at IR level, existing
   `IfSet`/`IfNotEmpty` codegen handles all cases.
-- [ ] **T-239**: Add e2e tests with `?` operator in fixture files.
-- [ ] **T-240**: Add CLI test for `check` with `?` operator warnings.
+- [x] **T-239**: Add e2e tests with `?` operator in fixture files.
+- [x] **T-240**: Add CLI test for `check` with `?` operator warnings.
 
 **Requirements covered:** v2 spec §3
 
