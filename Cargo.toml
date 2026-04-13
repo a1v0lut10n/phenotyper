@@ -33,4 +33,4 @@ serde_json = "1"
 clap = { version = "4", features = ["derive"] }
 
 # Internal crates
-phenotyper = { path = "crates/phenotyper" }
+phenotyper = { path = "crates/phenotyper", version = "0.2.0" }
