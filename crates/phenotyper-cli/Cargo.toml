@@ -4,6 +4,12 @@ description = "CLI for the Phenotyper compiler"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords = ["dsl", "compiler", "cli", "code-generation", "phenotyper"]
+categories = ["compilers", "command-line-utilities"]
 rust-version.workspace = true
 
 [[bin]]
@@ -11,6 +17,6 @@ name = "phenotyper"
 path = "src/main.rs"
 
 [dependencies]
-phenotyper-core = { workspace = true, features = ["json-diagnostics"] }
+phenotyper = { workspace = true, features = ["json-diagnostics"] }
 clap.workspace = true
 serde_json.workspace = true

@@ -10,7 +10,7 @@
 //! # Usage
 //!
 //! ```ignore
-//! use phenotyper_core::symbol;
+//! use phenotyper::symbol;
 //! let (table, diagnostics) = symbol::build(&ast, "file.pht");
 //! ```
 

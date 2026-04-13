@@ -13,13 +13,13 @@ Replaced the `namespace path;` keyword statement with structural `path:` ... `.`
 
 | File | Change |
 |------|--------|
-| [phenotyper.rustemo](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/parser/phenotyper.rustemo) | `NamespaceScope: path ':' uses decls '.'` replaces `NamespaceDecl` |
-| [build.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/build.rs) | `ParserAlgo::GLR` enabled |
-| [mod.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/parser/mod.rs) | `Forest` → `get_first_tree()` → `build()` pipeline; implicit `.` appended for `.md` containers |
-| [phenotyper_actions.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/parser/phenotyper_actions.rs) | `NamespaceScope` struct; `File.ns` field |
-| [collect.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/symbol/collect.rs) | `file_ast.ns.path` for namespace segments |
-| [lower.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/ir/lower.rs) | `file_ast.ns.decls` for declarations |
-| [resolve.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/symbol/resolve.rs) | `file_ast.ns.decls` for declarations |
+| [phenotyper.rustemo](file:///aivolution/projects/phenotyper/crates/phenotyper/src/parser/phenotyper.rustemo) | `NamespaceScope: path ':' uses decls '.'` replaces `NamespaceDecl` |
+| [build.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/build.rs) | `ParserAlgo::GLR` enabled |
+| [mod.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/src/parser/mod.rs) | `Forest` → `get_first_tree()` → `build()` pipeline; implicit `.` appended for `.md` containers |
+| [phenotyper_actions.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/src/parser/phenotyper_actions.rs) | `NamespaceScope` struct; `File.ns` field |
+| [collect.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/src/symbol/collect.rs) | `file_ast.ns.path` for namespace segments |
+| [lower.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/src/ir/lower.rs) | `file_ast.ns.decls` for declarations |
+| [resolve.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/src/symbol/resolve.rs) | `file_ast.ns.decls` for declarations |
 | All `.pht` fixtures | `namespace path;` → `path:` ... `.` |
 | All `.md` examples | `namespace path;` → `path:` (implicit `.`) |
 
@@ -54,10 +54,10 @@ The `?` operator creates no new IR nodes — it desugars to existing `IfSet`/`If
 
 | File | Change |
 |------|--------|
-| [phenotyper.rustemo](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/parser/phenotyper.rustemo) | `ConditionalRef` and `ConditionalDirective` productions; `Question` terminal |
-| [phenotyper_actions.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/parser/phenotyper_actions.rs) | `ConditionalRef`, `ConditionalDirective` structs + enum variants |
-| [lower.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/ir/lower.rs) | `lower_conditional_ref()` and `lower_conditional_directive()` — type-aware desugaring |
-| [resolve.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/symbol/resolve.rs) | Field reference resolution for `?` variants |
+| [phenotyper.rustemo](file:///aivolution/projects/phenotyper/crates/phenotyper/src/parser/phenotyper.rustemo) | `ConditionalRef` and `ConditionalDirective` productions; `Question` terminal |
+| [phenotyper_actions.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/src/parser/phenotyper_actions.rs) | `ConditionalRef`, `ConditionalDirective` structs + enum variants |
+| [lower.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/src/ir/lower.rs) | `lower_conditional_ref()` and `lower_conditional_directive()` — type-aware desugaring |
+| [resolve.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/src/symbol/resolve.rs) | Field reference resolution for `?` variants |
 
 ### Validation
 

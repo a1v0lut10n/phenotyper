@@ -10,7 +10,7 @@
 //! # Usage
 //!
 //! ```ignore
-//! use phenotyper_core::semantic;
+//! use phenotyper::semantic;
 //! let diagnostics = semantic::validate(&module, "file.pht");
 //! ```
 

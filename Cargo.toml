@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/phenotyper-core",
+    "crates/phenotyper",
     "crates/phenotyper-cli",
 ]
 
@@ -10,6 +10,13 @@ version = "0.2.0"
 edition = "2024"
 license = "Apache-2.0"
 rust-version = "1.85"
+description = "A domain-specific language and compiler for defining the shape of structured textual artifacts and generating typed tooling that can construct, render, validate, and eventually parse them."
+keywords = ["dsl", "codegen", "compiler", "text-generation", "code-generation"]
+categories = ["compilers", "development-tools::build-utils", "text-processing"]
+repository = "https://github.com/a1v0lut10n/phenotyper"
+homepage = "https://github.com/a1v0lut10n/phenotyper"
+readme = "README.md"
+authors = ["Hans Van Wesenbeeck <hvw@aivolution.ch>"]
 
 [workspace.dependencies]
 # Parser runtime
@@ -26,4 +33,4 @@ serde_json = "1"
 clap = { version = "4", features = ["derive"] }
 
 # Internal crates
-phenotyper-core = { path = "crates/phenotyper-core" }
+phenotyper = { path = "crates/phenotyper" }

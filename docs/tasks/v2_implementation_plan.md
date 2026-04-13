@@ -15,7 +15,7 @@ then `?` operator (self-contained), then nesting (most complex).
 ### Baseline
 
 - **v1 tag:** `v0.1.0` — 219 tests, 10 milestones complete
-- **Crate structure:** `phenotyper-core` (library) + `phenotyper-cli` (binary)
+- **Crate structure:** `phenotyper` (library) + `phenotyper-cli` (binary)
 - **Parser:** Rustemo LR(1) — will switch to GLR for v2
 
 ---

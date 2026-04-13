@@ -258,16 +258,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "phenotyper-cli"
-version = "0.2.0"
-dependencies = [
- "clap",
- "phenotyper-core",
- "serde_json",
-]
-
-[[package]]
-name = "phenotyper-core"
+name = "phenotyper"
 version = "0.2.0"
 dependencies = [
  "rustemo",
@@ -275,6 +266,15 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "phenotyper-cli"
+version = "0.2.0"
+dependencies = [
+ "clap",
+ "phenotyper",
+ "serde_json",
 ]
 
 [[package]]
