@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="static/phenotyper-logo.svg" alt="Phenotyper Logo" width="300">
+</p>
+
 # Phenotyper
 
 **Phenotyper** is a domain-specific language and compiler for defining the shape of structured textual artifacts and generating typed tooling that can construct, render, validate, and eventually parse them.
