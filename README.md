@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="static/phenotyper-logo.svg" alt="Phenotyper Logo" width="300">
+</p>
+
 # Phenotyper
 
 **Phenotyper** is a domain-specific language and compiler for defining the shape of structured textual artifacts and generating typed tooling that can construct, render, validate, and eventually parse them.
@@ -38,12 +42,11 @@ In that sense, Phenotyper is closer to **"artifact schema + rendering algebra + 
 ## Core idea
 
 A Phenotyper source file defines:
-- a **namespace**
-- reusable **types**
-- named **phenotypes**
+- a **structural namespace** (e.g., `aivolution/format/csv:`)
+- reusable **types** (unions, enums, type aliases)
+- named **phenotypes** with fields and render expressions
 - singular/plural phenotype relationships
-- typed fields
-- render expressions that produce output
+- **nested phenotypes** with parent-scoped field references
 - a constrained structure for building valid artifacts
 
 From that, the compiler can generate:
@@ -68,10 +71,9 @@ Phenotyper supports documentation-rich source documents in Markdown. Phenotype c
 This family models a CSV-like format.
 
 ```pht
-namespace aivolution/format/csv;
-uses aivolution/core/time;
+aivolution/format/csv:
 
-type ScalarValue: {int64, real64, string, Date, Time, Datetime};
+type ScalarValue: {int64, real64, string, date, time, datetime};
 type Visibility: [public, protected, private];
 
 CSVFieldValue plural CSVFieldValues:
@@ -81,20 +83,21 @@ CSVFieldValue plural CSVFieldValues:
 
 CSVLine plural CSVLines:
     values: required CSVFieldValues,
-    @join(values, @", "),
-    @eol()
+    separator: required string,
+    @join(values, separator)
 ;
+
+.
 ```
 ````
 
 ### Pure `.pht` source form
 
 ```pht
-namespace aivolution/format/csv;
-uses aivolution/core/time;
+aivolution/format/csv:
 
 // Reusable union-like type
-type ScalarValue: {int64, real64, string, Date, Time, Datetime};
+type ScalarValue: {int64, real64, string, date, time, datetime};
 
 /* Closed symbolic enum type */
 type Visibility: [public, protected, private];
@@ -103,33 +106,31 @@ CSVFieldValue plural CSVFieldValues:
     value: required ScalarValue,
     @(value)
 ;
+
+.
 ```
 
 ---
 
 ## Language highlights
 
-### Namespaces
+### Structural Namespaces
 
-Phenotyper uses `/` as its namespace separator.
+Phenotyper uses structural namespace declarations with `/` as the
+path separator, terminated by `:` at the start and `.` at the end:
 
 ```pht
-namespace aivolution/format/csv;
+aivolution/format/csv:
+
+// ... declarations ...
+
+.
 ```
 
 This maps naturally to generated Rust modules:
 
 - DSL namespace: `aivolution/format/csv`
 - Rust module path: `aivolution::format::csv`
-
-### Imports with `uses`
-
-```pht
-uses aivolution/core/time;
-uses aivolution/core/types;
-```
-
-In v1, `uses some/namespace;` makes all declarations in that namespace visible for unqualified reference.
 
 ### Reusable named types
 
@@ -161,12 +162,34 @@ A phenotype can declare its plural companion explicitly:
 ```pht
 CSVLine plural CSVLines:
     values: required CSVFieldValues,
-    @join(values, @", "),
-    @eol()
+    separator: required string,
+    @join(values, separator)
 ;
 ```
 
 This makes the DSL more natural to read and allows code generation to preserve semantic collection types rather than collapsing everything into anonymous vectors.
+
+### Nested phenotype declarations
+
+Phenotype bodies can contain other phenotype declarations for modeling
+hierarchical structures:
+
+```pht
+JavaClass plural JavaClasses:
+    name: required string,
+
+    Constructor plural Constructors:
+        argList: optional string,
+        @(JavaClass/name), "(", @(argList)?, ")"
+    ;,
+
+    ctors: required Constructors,
+    "class ", @(name), " { ... }"
+;
+```
+
+Nested types reference parent fields with `@(Parent/field)` and are
+flattened into independent Rust structs at compile time.
 
 ### Render expressions
 
@@ -175,23 +198,15 @@ Phenotyper's output side is expressed through a small, explicit render-expressio
 Supported forms include:
 
 ```pht
-@"implements "
-@(field)
-@(field/subfield)
-@join(values, @", ")
-@eol()
-@eol("\n")
-@tab(1)
-@tab(2, 120)
+"literal text"            // verbatim output
+@(field)                  // field emission
+@(Parent/field)           // parent-scoped field reference
+@(optional_field)?        // optional field shorthand
+@join(values, ", ")       // join collection with separator
+@eol                      // end of line
+@ifset(field) { ... }     // conditional on optional field
+@ifnotempty(field) { ... } // conditional on non-empty collection
 ```
-
-These cover:
-- verbatim output
-- field emission
-- relative field-path emission
-- joining collections with a render-expression separator
-- line ending control
-- tabulation and layout hints
 
 ### Comments in pure `.pht`
 
@@ -290,8 +305,8 @@ If a phenotype declares:
 ```pht
 CSVLine plural CSVLines:
     values: required CSVFieldValues,
-    @join(values, @", "),
-    @eol()
+    separator: required string,
+    @join(values, separator)
 ;
 ```
 
@@ -312,7 +327,7 @@ That gives you both:
 For a CSV-like phenotype such as:
 
 ```pht
-namespace aivolution/format/csv;
+aivolution/format/csv:
 
 type ScalarValue: {int64, real64, string, date, time, datetime};
 
@@ -323,7 +338,7 @@ CSVFieldValue plural CSVFieldValues:
 
 CSVRecord plural CSVRecords:
     values: required CSVFieldValues,
-    @join(values, @", ")
+    @join(values, ", ")
 ;
 
 CSVLine plural CSVLines:
@@ -333,8 +348,10 @@ CSVLine plural CSVLines:
 
 CSVFile plural CSVFiles:
     lines: required CSVLines,
-    @join(lines, @eol())
+    @join(lines, @eol)
 ;
+
+.
 ```
 
 Phenotyper could generate Rust along these lines:
@@ -697,16 +714,16 @@ Phenotypes should be easy to explain inline, which is why Markdown-based source 
 
 ---
 
-## Planned compiler pipeline
+## Compiler pipeline
 
-A likely v1 compiler pipeline looks like this:
+The v2 compiler pipeline:
 
 1. Read source container (`.md` or `.pht`)
 2. If Markdown, extract `pht` blocks and build a source map
-3. Parse the core Phenotyper language
-4. Build an AST
-5. Normalize to an IR
-6. Resolve namespaces, `uses`, and type references
+3. Parse the Phenotyper language (GLR parser via Rustemo)
+4. Build an AST with structural namespace, nested types, and `?` operators
+5. Collect symbols (two-pass name resolution)
+6. Normalize to an IR (flatten nested types, resolve parent context)
 7. Validate structure, cardinality, and render-expression correctness
 8. Generate Rust builders, types, and renderers
 9. Later: generate parsers and reverse mappings
@@ -717,31 +734,30 @@ A likely v1 compiler pipeline looks like this:
 
 Phenotyper's name-resolution model is intentionally simple.
 
-- every file belongs to exactly one namespace
+- every file belongs to exactly one structural namespace
 - local names must be unique within that namespace
-- `uses` brings all declarations from a namespace into scope in v1
-- local declarations shadow imported ones, with a compiler warning
-- ambiguous imported names are hard errors unless fully qualified
+- nested phenotype names are scoped to their parent
+- parent fields are referenced via qualified paths (e.g., `@(Parent/field)`)
 - duplicate names within the same namespace are hard errors
 
 ---
 
 ## Current status
 
-Phenotyper v1 is a **working compiler** with a complete pipeline:
+Phenotyper v2 is a **working compiler** with a complete pipeline:
 
 | Component | Status |
 |-----------|--------|
 | Lexer & source map | ✅ Tokenizer with markdown extraction |
-| Parser | ✅ Rustemo-based PEG grammar |
-| Symbol table | ✅ Two-pass name resolution |
-| Intermediate representation | ✅ Normalized IR with validation |
-| Semantic validation | ✅ Type, render, and generation checks |
+| Parser | ✅ GLR grammar via Rustemo |
+| Symbol table | ✅ Two-pass name resolution with nested scope support |
+| Intermediate representation | ✅ Normalized IR with parent context tracking |
+| Semantic validation | ✅ Type, render, nesting, and generation checks |
 | Diagnostics | ✅ Rich human-readable and JSON output |
-| Code generation | ✅ Idiomatic Rust with rustfmt |
+| Code generation | ✅ Idiomatic Rust with `render_with_parent` for nested types |
 | CLI | ✅ `check`, `build`, `dump-ast`, `dump-ir` |
 | Build integration | ✅ `phenotyper_core::compile()` API |
-| Test suite | ✅ 219 tests (unit, e2e, CLI, compile, runtime) |
+| Test suite | ✅ 257 tests (unit, e2e, CLI, compile, runtime) |
 
 ### Quick start
 
@@ -765,7 +781,7 @@ phenotyper build path/to/file.pht --out generated/
 - [Using generated code](docs/howto/using_generated_code.md) — Rust API guide
 - [Compiler usage](docs/howto/compiler_usage.md) — CLI reference
 - [Build script integration](docs/howto/build_rs_integration.md) — `build.rs` guide
-- [Worked examples](docs/examples/) — CSV, prompt, config, report
+- [Worked examples](docs/examples/) — CSV, prompt, config, report, javaclass
 
 ---
 

@@ -11,7 +11,7 @@ use clap::{Parser, Subcommand};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use phenotyper_core::diagnostic::{self, Diagnostic};
+use phenotyper::diagnostic::{self, Diagnostic};
 
 #[derive(Parser)]
 #[command(name = "phenotyper", about = "Phenotyper v1 compiler", version)]
@@ -94,7 +94,7 @@ fn cmd_check(file: &Path, json: bool) -> ExitCode {
     };
 
     // Use compile_source with no output directory (check only)
-    match phenotyper_core::compile_source(&source, &file_str, None) {
+    match phenotyper::compile_source(&source, &file_str, None) {
         Ok(output) => {
             emit_diagnostics(&output.warnings, json);
             if !json {
@@ -127,7 +127,7 @@ fn cmd_build(file: &Path, out: &Path, json: bool) -> ExitCode {
     };
 
     // Use compile_source with output directory
-    match phenotyper_core::compile_source(&source, &file_str, Some(out)) {
+    match phenotyper::compile_source(&source, &file_str, Some(out)) {
         Ok(output) => {
             emit_diagnostics(&output.warnings, json);
             if !json {
@@ -160,7 +160,7 @@ fn cmd_dump_ast(file: &Path) -> ExitCode {
         }
     };
 
-    match phenotyper_core::parser::parse_pht(&source, &file_str) {
+    match phenotyper::parser::parse_pht(&source, &file_str) {
         Ok(ast) => {
             println!("{ast:#?}");
             ExitCode::from(EXIT_SUCCESS)
@@ -188,7 +188,7 @@ fn cmd_dump_ir(file: &Path) -> ExitCode {
     };
 
     // Parse
-    let ast = match phenotyper_core::parser::parse_pht(&source, &file_str) {
+    let ast = match phenotyper::parser::parse_pht(&source, &file_str) {
         Ok(ast) => ast,
         Err(diags) => {
             for d in &diags {
@@ -199,7 +199,7 @@ fn cmd_dump_ir(file: &Path) -> ExitCode {
     };
 
     // Symbol resolution
-    let (table, sym_diags) = phenotyper_core::symbol::build(&ast, &file_str);
+    let (table, sym_diags) = phenotyper::symbol::build(&ast, &file_str);
     if diagnostic::has_errors(&sym_diags) {
         for d in &sym_diags {
             eprintln!("{}", diagnostic::format_human(d));
@@ -208,7 +208,7 @@ fn cmd_dump_ir(file: &Path) -> ExitCode {
     }
 
     // IR lowering
-    let (module, ir_diags) = phenotyper_core::ir::lower(&ast, &table, &file_str);
+    let (module, ir_diags) = phenotyper::ir::lower(&ast, &table, &file_str);
     if diagnostic::has_errors(&ir_diags) {
         for d in &ir_diags {
             eprintln!("{}", diagnostic::format_human(d));

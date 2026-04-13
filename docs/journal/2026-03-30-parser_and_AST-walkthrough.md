@@ -10,17 +10,17 @@ Implemented a Rustemo-based parser for the Phenotyper v1 language. The parser su
 
 | File | Purpose |
 |------|---------|
-| [phenotyper.rustemo](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/parser/phenotyper.rustemo) | Rustemo grammar for Phenotyper v1 (152 lines) |
-| [build.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/build.rs) | Build script invoking `rustemo-compiler` |
-| [parser/mod.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/parser/mod.rs) | Parser wrapper with `parse_pht()` and `parse_md()` |
-| [parser/phenotyper_actions.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/parser/phenotyper_actions.rs) | Rustemo-generated AST types and actions |
-| [parser/tests.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/parser/tests.rs) | 22 parser tests |
+| [phenotyper.rustemo](file:///aivolution/projects/phenotyper/crates/phenotyper/src/parser/phenotyper.rustemo) | Rustemo grammar for Phenotyper v1 (152 lines) |
+| [build.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/build.rs) | Build script invoking `rustemo-compiler` |
+| [parser/mod.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/src/parser/mod.rs) | Parser wrapper with `parse_pht()` and `parse_md()` |
+| [parser/phenotyper_actions.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/src/parser/phenotyper_actions.rs) | Rustemo-generated AST types and actions |
+| [parser/tests.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/src/parser/tests.rs) | 22 parser tests |
 
 ### Modified Files
 
 | File | Change |
 |------|--------|
-| [lexer/mod.rs](file:///aivolution/projects/phenotyper/crates/phenotyper-core/src/lexer/mod.rs) | Made `source_map` submodule public |
+| [lexer/mod.rs](file:///aivolution/projects/phenotyper/crates/phenotyper/src/lexer/mod.rs) | Made `source_map` submodule public |
 | [implementation_plan.md](file:///aivolution/projects/phenotyper/docs/tasks/implementation_plan.md) | Marked M2 tasks T-020 through T-031 as complete |
 
 ## Architecture

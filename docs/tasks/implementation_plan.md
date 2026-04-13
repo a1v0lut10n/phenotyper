@@ -25,8 +25,8 @@ Before starting implementation:
 ### Tasks
 
 - [x] **T-000**: Initialize Rust workspace at project root with `Cargo.toml`.
-- [x] **T-001**: Create `crates/phenotyper-core/` crate — the core compiler library (lexer, parser, AST, IR, semantic analysis, codegen).
-- [x] **T-002**: Create `crates/phenotyper-cli/` crate — the CLI binary that depends on `phenotyper-core`.
+- [x] **T-001**: Create `crates/phenotyper/` crate — the core compiler library (lexer, parser, AST, IR, semantic analysis, codegen).
+- [x] **T-002**: Create `crates/phenotyper-cli/` crate — the CLI binary that depends on `phenotyper`.
 - [x] **T-003**: Set up `tests/` directory structure per [REQ-TEST-006](../requirements/REQ-TEST-testing-strategy.md).
 - [x] **T-004**: Add initial `Cargo.toml` dependencies: `rustemo`, `clap` (CLI), `serde` (optional for JSON diagnostics), `thiserror`.
 - [x] **T-005**: Create initial test fixture files — valid and invalid `.pht` samples.

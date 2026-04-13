@@ -6,27 +6,27 @@ work.
 
 ## Overview
 
-The `phenotyper-core` crate provides a high-level `compile()` API
+The `phenotyper` crate provides a high-level `compile()` API
 that can be called from a `build.rs` script. This automates code
 generation as part of `cargo build`, so generated Rust code is always
 up to date.
 
 ## Setup
 
-### 1. Add `phenotyper-core` as a Build Dependency
+### 1. Add `phenotyper` as a Build Dependency
 
 In your project's `Cargo.toml`:
 
 ```toml
 [build-dependencies]
-phenotyper-core = { path = "../path/to/phenotyper/crates/phenotyper-core" }
+phenotyper = { path = "../path/to/phenotyper/crates/phenotyper" }
 ```
 
 Or, once published:
 
 ```toml
 [build-dependencies]
-phenotyper-core = "0.1"
+phenotyper = "0.2"
 ```
 
 ### 2. Create a `build.rs`
@@ -133,7 +133,7 @@ version = "0.1.0"
 edition = "2021"
 
 [build-dependencies]
-phenotyper-core = { path = "../phenotyper/crates/phenotyper-core" }
+phenotyper = { path = "../phenotyper/crates/phenotyper" }
 ```
 
 ### `build.rs`

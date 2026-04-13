@@ -18,7 +18,7 @@
 //! ```ignore
 //! // In your build.rs:
 //! fn main() {
-//!     phenotyper_core::compile("src/phenotypes/csv.pht", "src/generated")
+//!     phenotyper::compile("src/phenotypes/csv.pht", "src/generated")
 //!         .expect("phenotyper compilation failed");
 //! }
 //! ```
@@ -77,7 +77,7 @@ pub struct CompileOutput {
 /// ```ignore
 /// // build.rs
 /// fn main() {
-///     phenotyper_core::compile("src/phenotypes/csv.pht", "src/generated")
+///     phenotyper::compile("src/phenotypes/csv.pht", "src/generated")
 ///         .expect("phenotyper compilation failed");
 /// }
 /// ```

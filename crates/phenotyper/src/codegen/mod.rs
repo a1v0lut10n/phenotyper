@@ -13,7 +13,7 @@
 //! # Usage
 //!
 //! ```ignore
-//! use phenotyper_core::codegen;
+//! use phenotyper::codegen;
 //! let rust_code = codegen::generate(&module);
 //! ```
 

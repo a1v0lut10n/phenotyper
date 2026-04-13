@@ -61,6 +61,9 @@ generated/
         mod.rs      ← generated Rust module
 ```
 
+> **Note:** Nested phenotype types are flattened into the same `mod.rs`
+> as their parent.
+
 ### `dump-ast` — Print the AST
 
 Print the parsed AST for debugging:
@@ -79,7 +82,9 @@ Print the normalized intermediate representation:
 phenotyper dump-ir path/to/file.pht
 ```
 
-Output is Rust `Debug` format of the `PhenotypeModule`.
+Output is Rust `Debug` format of the `PhenotypeModule`. Nested types
+appear as flattened entries with `parent_context` set for types that
+reference parent fields.
 
 ## Flags
 

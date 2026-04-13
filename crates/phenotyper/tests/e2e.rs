@@ -2,11 +2,11 @@
 //! End-to-end integration tests — validate the full pipeline from `.pht` source
 //! through code generation and verify the generated code structure.
 
-use phenotyper_core::diagnostic;
+use phenotyper::diagnostic;
 
 /// Helper: compile a .pht source and return the generated Rust code.
 fn compile_ok(source: &str) -> String {
-    match phenotyper_core::compile_source(source, "test.pht", None) {
+    match phenotyper::compile_source(source, "test.pht", None) {
         Ok(output) => {
             assert!(
                 output.warnings.is_empty(),
@@ -25,8 +25,8 @@ fn compile_ok(source: &str) -> String {
 }
 
 /// Helper: compile and expect errors.
-fn compile_err(source: &str) -> Vec<phenotyper_core::diagnostic::Diagnostic> {
-    match phenotyper_core::compile_source(source, "test.pht", None) {
+fn compile_err(source: &str) -> Vec<phenotyper::diagnostic::Diagnostic> {
+    match phenotyper::compile_source(source, "test.pht", None) {
         Ok(_) => panic!("expected compilation to fail"),
         Err(errors) => errors,
     }
@@ -135,7 +135,7 @@ fn e2e_csv_fixture_compiles() {
 #[test]
 fn e2e_csv_namespace() {
     let source = include_str!("../../../tests/fixtures/valid/csv_basic.pht");
-    let output = phenotyper_core::compile_source(source, "test.pht", None).unwrap();
+    let output = phenotyper::compile_source(source, "test.pht", None).unwrap();
     assert_eq!(output.namespace, "aivolution/format/csv");
 }
 
@@ -159,7 +159,7 @@ fn e2e_csv_join_separator() {
 fn e2e_md_container_compiles() {
     // Compile the csv.md example (markdown with embedded ```pht blocks)
     let md_source = include_str!("../../../docs/examples/csv.md");
-    let output = phenotyper_core::compile_source(md_source, "csv.md", None).unwrap();
+    let output = phenotyper::compile_source(md_source, "csv.md", None).unwrap();
 
     assert_eq!(output.namespace, "aivolution/format/csv");
     assert!(output.code.contains("pub struct CsvFieldValue"));
@@ -188,7 +188,7 @@ fn e2e_md_all_examples_compile() {
     ];
 
     for (name, source) in &examples {
-        let result = phenotyper_core::compile_source(source, name, None);
+        let result = phenotyper::compile_source(source, name, None);
         assert!(result.is_ok(), "{name} failed: {:?}", result.err());
     }
 }
@@ -197,7 +197,7 @@ fn e2e_md_all_examples_compile() {
 fn e2e_md_no_pht_blocks_error() {
     // A markdown file with no ```pht blocks should produce an error
     let md = "# Just a regular markdown file\n\nNo phenotyper here.\n";
-    let result = phenotyper_core::compile_source(md, "empty.md", None);
+    let result = phenotyper::compile_source(md, "empty.md", None);
     assert!(result.is_err());
     let errors = result.unwrap_err();
     assert!(errors.iter().any(|e| e.summary.contains("no")));
@@ -246,7 +246,7 @@ fn e2e_prompt_compiles() {
 #[test]
 fn e2e_prompt_namespace() {
     let source = include_str!("../../../tests/fixtures/valid/prompt.pht");
-    let output = phenotyper_core::compile_source(source, "test.pht", None).unwrap();
+    let output = phenotyper::compile_source(source, "test.pht", None).unwrap();
     assert_eq!(output.namespace, "aivolution/ai/prompt");
 }
 
@@ -406,7 +406,7 @@ fn e2e_compile_writes_output() {
     let out_dir = std::env::temp_dir().join("phenotyper-e2e-test");
     let _ = std::fs::remove_dir_all(&out_dir);
 
-    let output = phenotyper_core::compile_source(source, "test.pht", Some(&out_dir)).unwrap();
+    let output = phenotyper::compile_source(source, "test.pht", Some(&out_dir)).unwrap();
 
     let expected_file = out_dir.join("aivolution/format/csv/mod.rs");
     assert!(expected_file.exists(), "output file not created");
@@ -455,7 +455,7 @@ fn e2e_all_fixtures_compile() {
     ];
 
     for (i, source) in fixtures.iter().enumerate() {
-        let result = phenotyper_core::compile_source(source, &format!("fixture_{i}.pht"), None);
+        let result = phenotyper::compile_source(source, &format!("fixture_{i}.pht"), None);
         assert!(result.is_ok(), "fixture {i} failed: {:?}", result.err());
     }
 }

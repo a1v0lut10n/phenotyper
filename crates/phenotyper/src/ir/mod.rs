@@ -7,7 +7,7 @@
 //! # Usage
 //!
 //! ```ignore
-//! use phenotyper_core::{parser, symbol, ir};
+//! use phenotyper::{parser, symbol, ir};
 //! let ast = parser::parse_pht(source, "file.pht")?;
 //! let (table, sym_diags) = symbol::build(&ast, "file.pht");
 //! let (module, ir_diags) = ir::lower(&ast, &table, "file.pht");

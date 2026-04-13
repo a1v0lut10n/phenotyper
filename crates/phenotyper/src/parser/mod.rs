@@ -15,7 +15,7 @@
 //! # Usage
 //!
 //! ```ignore
-//! use phenotyper_core::parser;
+//! use phenotyper::parser;
 //! let ast = parser::parse_pht(source, "file.pht")?;
 //! ```
 
