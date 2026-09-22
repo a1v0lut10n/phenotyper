@@ -74,7 +74,6 @@ This family models a CSV-like format.
 aivolution/format/csv:
 
 type ScalarValue: {int64, real64, string, date, time, datetime};
-type Visibility: [public, protected, private];
 
 CSVFieldValue plural CSVFieldValues:
     value: required ScalarValue,
