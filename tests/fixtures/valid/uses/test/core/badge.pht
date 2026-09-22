@@ -1,0 +1,6 @@
+test/core/badge:
+Badge plural Badges:
+    label: required string,
+    @(label)
+;
+.

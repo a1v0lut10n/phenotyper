@@ -39,7 +39,7 @@ pub fn emit_module(module: &PhenotypeModule) -> String {
 
     // Type aliases (union types at namespace level)
     for alias in &module.aliases {
-        emit_type_alias(alias, &mut out);
+        emit_type_alias(alias, module, &mut out);
     }
 
     // Phenotype types
@@ -124,7 +124,7 @@ fn emit_enum_type(enum_type: &EnumType, out: &mut String) {
 
 // ─── Type aliases (union types) ─────────────────────────────────────────────
 
-fn emit_type_alias(alias: &TypeAlias, out: &mut String) {
+fn emit_type_alias(alias: &TypeAlias, module: &PhenotypeModule, out: &mut String) {
     let rust_name = naming::to_rust_type_name(&alias.name);
 
     match &alias.target {
@@ -156,7 +156,7 @@ fn emit_type_alias(alias: &TypeAlias, out: &mut String) {
         }
         other => {
             // Simple type alias
-            let ty = rust_type(other, Cardinality::One);
+            let ty = rust_type(other, Cardinality::One, module);
             out.push_str(&format!("pub type {rust_name} = {ty};\n\n"));
         }
     }
@@ -362,7 +362,7 @@ fn emit_render_node(
         RenderNode::Emit(field_id) => {
             if let Some(field) = pt.fields.iter().find(|f| f.id == *field_id) {
                 let field_name = naming::to_rust_field_name(&field.name);
-                emit_field_render(&field_name, &field.ty, out, indent);
+                emit_field_render(&field_name, &field.ty, module, out, indent);
             }
         }
 
@@ -413,7 +413,13 @@ fn emit_render_node(
                 out.push_str(&format!("{indent}    first = false;\n"));
 
                 // Render the item
-                if needs_render_into(&f.ty) {
+                if let ValueType::Imported(imp) = &f.ty {
+                    // UFCS through the exporter's Render trait (see emit_field_render).
+                    let prefix = naming::imported_module_prefix(&module.namespace, &imp.namespace);
+                    out.push_str(&format!(
+                        "{indent}    {prefix}Render::render_into(item, out);\n"
+                    ));
+                } else if needs_render_into(&f.ty) {
                     out.push_str(&format!("{indent}    item.render_into(out);\n"));
                 } else {
                     emit_item_render("item", &f.ty, out, &format!("{indent}    "));
@@ -478,7 +484,7 @@ fn emit_guarded_render_node(
         RenderNode::Emit(field_id) if *field_id == guarded_field_id => {
             // This is the guarded field — use `val` from the if-let binding
             if let Some(field) = pt.fields.iter().find(|f| f.id == *field_id) {
-                emit_val_render("val", &field.ty, out, indent);
+                emit_val_render("val", &field.ty, module, out, indent);
             }
         }
         // For all other nodes, delegate to the standard renderer
@@ -647,13 +653,14 @@ fn emit_field_union_enum(enum_name: &str, members: &[ValueType], out: &mut Strin
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /// Map a `ValueType` + cardinality to a Rust type string.
-fn rust_type(ty: &ValueType, cardinality: Cardinality) -> String {
+fn rust_type(ty: &ValueType, cardinality: Cardinality, module: &PhenotypeModule) -> String {
     let base = match ty {
         ValueType::Primitive(p) => primitive_rust_type(*p).to_string(),
         ValueType::UserSingular(id) => format!("/* TypeId({}) */", id.0),
         ValueType::UserPlural { .. } => "/* plural */".to_string(),
         ValueType::Enum(id) => format!("/* EnumId({}) */", id.0),
         ValueType::TypeAlias(id) => format!("/* AliasId({}) */", id.0),
+        ValueType::Imported(imp) => imported_type_path(imp, module),
         ValueType::Union(_) => "/* union */".to_string(),
     };
 
@@ -714,8 +721,18 @@ fn field_rust_type_bare(
                 "()".to_string()
             }
         }
+        ValueType::Imported(imp) => imported_type_path(imp, module),
         ValueType::Union(_) => naming::to_union_enum_name(parent_type_name, &field.name),
     }
+}
+
+/// The Rust path of an imported declaration, relative to this module.
+fn imported_type_path(imp: &crate::ir::ImportedRef, module: &PhenotypeModule) -> String {
+    format!(
+        "{}{}",
+        naming::imported_module_prefix(&module.namespace, &imp.namespace),
+        naming::to_rust_type_name(&imp.name)
+    )
 }
 
 /// Resolve a TypeId to its Rust type name.
@@ -793,7 +810,13 @@ fn union_variant_render(ty: &ValueType) -> String {
 }
 
 /// Emit code to render a field by name.
-fn emit_field_render(field_name: &str, ty: &ValueType, out: &mut String, indent: &str) {
+fn emit_field_render(
+    field_name: &str,
+    ty: &ValueType,
+    module: &PhenotypeModule,
+    out: &mut String,
+    indent: &str,
+) {
     match ty {
         ValueType::Primitive(PrimitiveType::String) => {
             out.push_str(&format!("{indent}out.push_str(&self.{field_name});\n"));
@@ -812,15 +835,30 @@ fn emit_field_render(field_name: &str, ty: &ValueType, out: &mut String, indent:
             // Date/Time/DateTime are stored as String
             out.push_str(&format!("{indent}out.push_str(&self.{field_name});\n"));
         }
+        ValueType::Imported(imp) => {
+            // The imported type implements the *exporter's* `Render` trait
+            // (every generated module defines its own), so call it UFCS —
+            // no trait import needed in this module.
+            let prefix = naming::imported_module_prefix(&module.namespace, &imp.namespace);
+            out.push_str(&format!(
+                "{indent}{prefix}Render::render_into(&self.{field_name}, out);\n"
+            ));
+        }
         _ => {
-            // User types, enums, unions: use render_into
+            // Local user types, enums, unions: use render_into
             out.push_str(&format!("{indent}self.{field_name}.render_into(out);\n"));
         }
     }
 }
 
 /// Emit code to render a `val` binding (inside @ifset).
-fn emit_val_render(var_name: &str, ty: &ValueType, out: &mut String, indent: &str) {
+fn emit_val_render(
+    var_name: &str,
+    ty: &ValueType,
+    module: &PhenotypeModule,
+    out: &mut String,
+    indent: &str,
+) {
     match ty {
         ValueType::Primitive(PrimitiveType::String) => {
             out.push_str(&format!("{indent}out.push_str({var_name});\n"));
@@ -835,6 +873,13 @@ fn emit_val_render(var_name: &str, ty: &ValueType, out: &mut String, indent: &st
         }
         ValueType::Primitive(_) => {
             out.push_str(&format!("{indent}out.push_str({var_name});\n"));
+        }
+        ValueType::Imported(imp) => {
+            // UFCS through the exporter's Render trait (see emit_field_render).
+            let prefix = naming::imported_module_prefix(&module.namespace, &imp.namespace);
+            out.push_str(&format!(
+                "{indent}{prefix}Render::render_into({var_name}, out);\n"
+            ));
         }
         _ => {
             out.push_str(&format!("{indent}{var_name}.render_into(out);\n"));

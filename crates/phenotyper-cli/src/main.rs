@@ -28,6 +28,11 @@ enum Commands {
         #[arg(value_name = "FILE")]
         file: PathBuf,
 
+        /// Search root(s) resolving `uses a/b/c;` to <root>/a/b/c.pht|.md
+        /// (repeatable); the whole set is checked
+        #[arg(long, value_name = "DIR")]
+        root: Vec<PathBuf>,
+
         /// Output diagnostics as JSON
         #[arg(long)]
         json: bool,
@@ -42,6 +47,11 @@ enum Commands {
         /// Output directory for generated Rust code
         #[arg(long, short, value_name = "DIR")]
         out: PathBuf,
+
+        /// Search root(s) resolving `uses a/b/c;` to <root>/a/b/c.pht|.md
+        /// (repeatable); every namespace in the set is generated
+        #[arg(long, value_name = "DIR")]
+        root: Vec<PathBuf>,
 
         /// Output diagnostics as JSON
         #[arg(long)]
@@ -73,8 +83,13 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Check { file, json } => cmd_check(&file, json),
-        Commands::Build { file, out, json } => cmd_build(&file, &out, json),
+        Commands::Check { file, root, json } => cmd_check(&file, &root, json),
+        Commands::Build {
+            file,
+            out,
+            root,
+            json,
+        } => cmd_build(&file, &out, &root, json),
         Commands::DumpAst { file } => cmd_dump_ast(&file),
         Commands::DumpIr { file } => cmd_dump_ir(&file),
     }
@@ -82,8 +97,42 @@ fn main() -> ExitCode {
 
 // ─── check ──────────────────────────────────────────────────────────────────
 
-fn cmd_check(file: &Path, json: bool) -> ExitCode {
+fn cmd_check(file: &Path, roots: &[PathBuf], json: bool) -> ExitCode {
     let file_str = file.display().to_string();
+
+    // With search roots, check the whole `uses` set: compile it into a
+    // scratch directory that is discarded (check generates nothing lasting).
+    if !roots.is_empty() {
+        let scratch = std::env::temp_dir().join(format!(
+            "phenotyper-check-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or_default()
+        ));
+        let result = phenotyper::compile_with_roots(file, roots, &scratch);
+        let _ = std::fs::remove_dir_all(&scratch);
+        return match result {
+            Ok(outputs) => {
+                let warnings: Vec<_> = outputs.iter().flat_map(|o| o.warnings.clone()).collect();
+                emit_diagnostics(&warnings, json);
+                if !json {
+                    eprintln!(
+                        "✓ {} (+{} used namespace(s)) — {}",
+                        file_str,
+                        outputs.len().saturating_sub(1),
+                        diagnostic::format_summary(&warnings)
+                    );
+                }
+                ExitCode::from(EXIT_SUCCESS)
+            }
+            Err(errors) => {
+                emit_diagnostics(&errors, json);
+                ExitCode::from(EXIT_FAILURE)
+            }
+        };
+    }
 
     let source = match read_source(file) {
         Ok(s) => s,
@@ -115,8 +164,33 @@ fn cmd_check(file: &Path, json: bool) -> ExitCode {
 
 // ─── build ──────────────────────────────────────────────────────────────────
 
-fn cmd_build(file: &Path, out: &Path, json: bool) -> ExitCode {
+fn cmd_build(file: &Path, out: &Path, roots: &[PathBuf], json: bool) -> ExitCode {
     let file_str = file.display().to_string();
+
+    // With search roots, build the whole `uses` set into `out` (every
+    // namespace's module plus the mountable mod.rs tree).
+    if !roots.is_empty() {
+        return match phenotyper::compile_with_roots(file, roots, out) {
+            Ok(outputs) => {
+                let warnings: Vec<_> = outputs.iter().flat_map(|o| o.warnings.clone()).collect();
+                emit_diagnostics(&warnings, json);
+                if !json {
+                    eprintln!(
+                        "✓ {} (+{} used namespace(s)) → {} — {}",
+                        file_str,
+                        outputs.len().saturating_sub(1),
+                        out.display(),
+                        diagnostic::format_summary(&warnings)
+                    );
+                }
+                ExitCode::from(EXIT_SUCCESS)
+            }
+            Err(errors) => {
+                emit_diagnostics(&errors, json);
+                ExitCode::from(EXIT_FAILURE)
+            }
+        };
+    }
 
     let source = match read_source(file) {
         Ok(s) => s,

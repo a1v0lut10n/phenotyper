@@ -1,0 +1,8 @@
+test/ai/card:
+uses test/core/badge;
+Card:
+    title: required string,
+    badge: required Badge,
+    @(title), " [", @(badge), "]"
+;
+.

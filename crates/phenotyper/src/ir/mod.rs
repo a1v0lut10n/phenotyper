@@ -19,7 +19,9 @@ mod lower;
 mod tests;
 
 use crate::diagnostic::{Diagnostic, Severity};
-use crate::symbol::{AliasId, Cardinality, EnumId, FieldId, PrimitiveType, Requiredness, TypeId};
+use crate::symbol::{
+    AliasId, Cardinality, EnumId, FieldId, ImportedKind, PrimitiveType, Requiredness, TypeId,
+};
 
 // ─── IR data types (REQ-COMP-006) ──────────────────────────────────────────
 
@@ -72,8 +74,22 @@ pub enum ValueType {
     Enum(EnumId),
     /// A reference to a type alias.
     TypeAlias(AliasId),
+    /// A reference to a declaration in another namespace, brought into scope
+    /// by `uses` (REQ-LANG-003). Codegen references it by Rust path — the
+    /// declaration is never re-emitted in the importing module.
+    Imported(ImportedRef),
     /// A union of multiple types.
     Union(Vec<ValueType>),
+}
+
+/// An imported declaration, addressed by namespace and name.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ImportedRef {
+    /// The exporting namespace path (e.g. `"aivolution/core/time"`).
+    pub namespace: String,
+    /// The declared name in that namespace.
+    pub name: String,
+    pub kind: ImportedKind,
 }
 
 /// A lowered render expression node.

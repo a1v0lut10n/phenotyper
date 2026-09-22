@@ -427,3 +427,79 @@ fn cli_dump_ir_javaclass_shows_parent_ref() {
         "expected parent_context in IR"
     );
 }
+
+// ─── uses / --root (PHT-0027, REQ-LANG-003) ─────────────────────────────────
+
+/// The committed two-namespace `uses` fixture's search root.
+fn uses_root() -> std::path::PathBuf {
+    let mut path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push("../../tests/fixtures/valid/uses");
+    path
+}
+
+#[test]
+fn cli_check_with_root_resolves_uses() {
+    let root = uses_root();
+    let entry = root.join("test/ai/card.pht");
+    let output = Command::new(phenotyper_bin())
+        .args([
+            "check",
+            entry.to_str().unwrap(),
+            "--root",
+            root.to_str().unwrap(),
+        ])
+        .output()
+        .expect("failed to run binary");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "stderr: {stderr}");
+    assert!(stderr.contains("+1 used namespace(s)"), "stderr: {stderr}");
+}
+
+#[test]
+fn cli_check_without_root_fails_on_uses() {
+    let entry = uses_root().join("test/ai/card.pht");
+    let output = Command::new(phenotyper_bin())
+        .args(["check", entry.to_str().unwrap()])
+        .output()
+        .expect("failed to run binary");
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("cannot resolve `uses test/core/badge;`"),
+        "stderr: {stderr}"
+    );
+}
+
+#[test]
+fn cli_build_with_root_writes_the_module_tree() {
+    let root = uses_root();
+    let entry = root.join("test/ai/card.pht");
+    let out = std::env::temp_dir().join(format!(
+        "phenotyper-cli-uses-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or_default()
+    ));
+    let output = Command::new(phenotyper_bin())
+        .args([
+            "build",
+            entry.to_str().unwrap(),
+            "--out",
+            out.to_str().unwrap(),
+            "--root",
+            root.to_str().unwrap(),
+        ])
+        .output()
+        .expect("failed to run binary");
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(out.join("mod.rs").is_file());
+    assert!(out.join("test/ai/card/mod.rs").is_file());
+    assert!(out.join("test/core/badge/mod.rs").is_file());
+    let _ = std::fs::remove_dir_all(&out);
+}
