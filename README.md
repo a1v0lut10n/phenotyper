@@ -132,6 +132,34 @@ This maps naturally to generated Rust modules:
 - DSL namespace: `aivolution/format/csv`
 - Rust module path: `aivolution::format::csv`
 
+### Imports (`uses`)
+
+A namespace imports another namespace's declarations into unqualified
+scope with `uses` (REQ-LANG-003):
+
+```pht
+aivolution/ai/prompt:
+
+uses aivolution/core/badge;
+
+Card:
+    title: required string,
+    badge: required Badge,
+    @(title), " [", @(badge), "]"
+;
+.
+```
+
+Imports resolve through a **compilation set**: `compile_with_roots(entry,
+roots, out_dir)` (or `phenotyper build --root <dir>`) finds each used
+namespace at `<root>/<namespace>.pht` or `.md`, compiles every namespace
+once in dependency order, and writes a mountable module tree — the
+generated code references imported types by relative Rust path
+(`super::…::Badge`) and never re-emits them. Local declarations shadow
+imported ones (a warning names the exporter); a name importable from two
+namespaces is a hard error at its use site; `uses` cycles are hard
+errors naming the cycle.
+
 ### Reusable named types
 
 ```pht
@@ -736,6 +764,9 @@ Phenotyper's name-resolution model is intentionally simple.
 
 - every file belongs to exactly one structural namespace
 - local names must be unique within that namespace
+- `uses a/b/c;` brings that namespace's declarations into unqualified
+  scope; locals shadow imports (warning), cross-import ambiguity is a
+  hard error at the use site
 - nested phenotype names are scoped to their parent
 - parent fields are referenced via qualified paths (e.g., `@(Parent/field)`)
 - duplicate names within the same namespace are hard errors
@@ -755,9 +786,10 @@ Phenotyper v2 is a **working compiler** with a complete pipeline:
 | Semantic validation | ✅ Type, render, nesting, and generation checks |
 | Diagnostics | ✅ Rich human-readable and JSON output |
 | Code generation | ✅ Idiomatic Rust with `render_with_parent` for nested types |
-| CLI | ✅ `check`, `build`, `dump-ast`, `dump-ir` |
-| Build integration | ✅ `phenotyper_core::compile()` API |
-| Test suite | ✅ 257 tests (unit, e2e, CLI, compile, runtime) |
+| Imports (`uses`) | ✅ Compilation sets over search roots, cross-namespace codegen (PHT-0027) |
+| CLI | ✅ `check`, `build` (`--root` for `uses` sets), `dump-ast`, `dump-ir` |
+| Build integration | ✅ `phenotyper::compile()` / `compile_with_roots()` APIs |
+| Test suite | ✅ 271 tests (unit, e2e, CLI, compile, runtime, uses sets) |
 
 ### Quick start
 

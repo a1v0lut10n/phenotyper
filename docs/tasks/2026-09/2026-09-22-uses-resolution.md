@@ -9,6 +9,22 @@ tags: [language, uses, imports, resolution, codegen, PHT-0027]
 
 # PHT-0027: resolve `uses` — cross-namespace imports, end to end
 
+*Status 2026-09-22, as built: all six deliverables, with three deviations
+worth recording. (1) REQ-LANG-003's "hard errors **unless fully
+qualified**" is unenforceable as written — the grammar has no qualified
+syntax in type positions (type names are bare identifiers), so
+cross-import ambiguity is a plain hard error suggesting a rename;
+qualified type references need a grammar regeneration and stay future
+work. (2) Imported types inside union types are rejected with an honest
+diagnostic — union variant naming is local-only for now. (3) The design
+memo needed no edit: its "import" mentions are the template-import CLI,
+not `uses`. API landed as `compile_with_roots(entry, roots, out_dir) ->
+Vec<CompileOutput>` plus `--root` on `check`/`build`; the set writer
+emits the intermediate `mod.rs` chain so the tree mounts with one `pub
+mod`, and imported rendering goes through the exporter's `Render` trait
+via UFCS. Proven end to end: the two-namespace fixture compiles under
+`rustc` and renders `Genite [gold]` across the boundary.*
+
 ## Objective
 
 Implement REQ-LANG-003. `uses a/b/c;` is accepted by the grammar and
