@@ -1,7 +1,7 @@
 ---
 date: 2026-09-22
 type: task
-status: planned
+status: done
 affects:
   - README.md
 tags: [language, uses, imports, resolution, codegen, PHT-0027]
