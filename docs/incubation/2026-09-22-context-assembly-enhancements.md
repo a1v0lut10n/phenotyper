@@ -10,7 +10,9 @@ phenotyper this way once (the pre-GEN-013 brain compiled
 worked; what follows is what a fuller engagement needs that v0.2.0
 does not have, roughly in order of leverage.
 
-1. **Resolve `uses`.** The grammar and lexer accept `uses a/b/c;`, the
+1. **Resolve `uses`.** *Graduated 2026-09-22 to
+   `docs/tasks/2026-09/2026-09-22-uses-resolution.md` (PHT-0027).*
+   The grammar and lexer accept `uses a/b/c;`, the
    AST carries it, and nothing consumes it —
    `REQ-LANG-language-core.md` specifies unqualified-scope imports,
    unimplemented. Without it there is no shared prompt vocabulary: a
