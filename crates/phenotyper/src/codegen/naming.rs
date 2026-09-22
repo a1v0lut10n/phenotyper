@@ -89,6 +89,33 @@ pub fn to_union_enum_name(type_name: &str, field_name: &str) -> String {
     )
 }
 
+/// The Rust module path prefix (ending in `::`) from the generated module of
+/// `from_ns` to the generated module of `to_ns` (REQ-LANG-003).
+///
+/// Generated modules live in a namespace-shaped tree (`a/b/c` →
+/// `<out>/a/b/c/mod.rs`), so the path climbs to the common ancestor with
+/// `super::` and descends into the target: from `aivolution/ai/prompt` to
+/// `aivolution/core/time` is `super::super::core::time::`. This is relative,
+/// so it holds wherever the tree is mounted in the consumer's crate.
+pub fn imported_module_prefix(from_ns: &str, to_ns: &str) -> String {
+    let from: Vec<&str> = from_ns.split('/').collect();
+    let to: Vec<&str> = to_ns.split('/').collect();
+    let common = from
+        .iter()
+        .zip(to.iter())
+        .take_while(|(a, b)| a == b)
+        .count();
+    let mut path = String::new();
+    for _ in 0..(from.len() - common) {
+        path.push_str("super::");
+    }
+    for segment in &to[common..] {
+        path.push_str(segment);
+        path.push_str("::");
+    }
+    path
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

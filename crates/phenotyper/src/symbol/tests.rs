@@ -506,3 +506,172 @@ fn plural_companion_maps_to_singular() {
     };
     assert_eq!(singular_id, plural_id);
 }
+
+// ─── Imports (`uses`, REQ-LANG-003) ─────────────────────────────────────────
+
+/// Helper: compile a dependency namespace and hand back its exports.
+fn exports_of(source: &str) -> NamespaceExports {
+    let ast = parser::parse_pht(source, "dep.pht").expect("dep parses");
+    let (table, diags) = build(&ast, "dep.pht");
+    assert!(
+        diags
+            .iter()
+            .all(|d| d.severity != crate::diagnostic::Severity::Error),
+        "dep must compile: {diags:#?}"
+    );
+    table.exports()
+}
+
+const BADGE_DEP: &str = r#"
+    test/core/badge:
+    Badge plural Badges:
+        label: required string,
+        @(label)
+    ;
+.
+"#;
+
+#[test]
+fn import_resolves_in_field_types() {
+    let importer = r#"
+        test/ai/card:
+        uses test/core/badge;
+        Card:
+            badge: required Badge,
+            @(badge)
+        ;
+    .
+    "#;
+    let ast = parser::parse_pht(importer, "card.pht").expect("parses");
+    let (table, diags) = build_with_imports(&ast, "card.pht", &[exports_of(BADGE_DEP)]);
+    let errors: Vec<_> = diags
+        .iter()
+        .filter(|d| d.severity == crate::diagnostic::Severity::Error)
+        .collect();
+    assert!(errors.is_empty(), "unexpected errors: {errors:#?}");
+    assert!(matches!(
+        table.resolve_any("Badge"),
+        Some(ResolvedSymbol::Imported(is)) if is.namespace == "test/core/badge"
+            && is.kind == ImportedKind::Phenotype
+    ));
+    assert!(matches!(
+        table.resolve_any("Badges"),
+        Some(ResolvedSymbol::Imported(is)) if is.kind == ImportedKind::Plural
+    ));
+}
+
+#[test]
+fn local_declaration_shadows_import_with_a_warning() {
+    let importer = r#"
+        test/ai/card:
+        uses test/core/badge;
+        Badge:
+            title: required string,
+            @(title)
+        ;
+    .
+    "#;
+    let ast = parser::parse_pht(importer, "card.pht").expect("parses");
+    let (table, diags) = build_with_imports(&ast, "card.pht", &[exports_of(BADGE_DEP)]);
+    assert!(
+        diags
+            .iter()
+            .any(|d| d.severity == crate::diagnostic::Severity::Warning
+                && d.summary
+                    .contains("shadows the import from `test/core/badge`")),
+        "expected shadow warning: {diags:#?}"
+    );
+    // The local declaration wins.
+    assert!(matches!(
+        table.resolve_any("Badge"),
+        Some(ResolvedSymbol::Local(Symbol::Phenotype(_)))
+    ));
+}
+
+#[test]
+fn ambiguous_import_is_an_error_at_the_use_site() {
+    let other_dep = r#"
+        test/other/badge:
+        Badge:
+            icon: required string,
+            @(icon)
+        ;
+    .
+    "#;
+    let importer = r#"
+        test/ai/card:
+        uses test/core/badge;
+        uses test/other/badge;
+        Card:
+            badge: required Badge,
+            @(badge)
+        ;
+    .
+    "#;
+    let ast = parser::parse_pht(importer, "card.pht").expect("parses");
+    let (_, diags) = build_with_imports(
+        &ast,
+        "card.pht",
+        &[exports_of(BADGE_DEP), exports_of(other_dep)],
+    );
+    assert!(
+        diags
+            .iter()
+            .any(|d| d.severity == crate::diagnostic::Severity::Error
+                && d.summary.contains("ambiguous type `Badge`")
+                && d.summary.contains("test/core/badge")
+                && d.summary.contains("test/other/badge")),
+        "expected ambiguity error: {diags:#?}"
+    );
+}
+
+#[test]
+fn unresolved_uses_is_an_error() {
+    let importer = r#"
+        test/ai/card:
+        uses test/core/badge;
+        Card:
+            name: required string,
+            @(name)
+        ;
+    .
+    "#;
+    let ast = parser::parse_pht(importer, "card.pht").expect("parses");
+    let (_, diags) = build(&ast, "card.pht");
+    assert!(
+        diags
+            .iter()
+            .any(|d| d.severity == crate::diagnostic::Severity::Error
+                && d.summary.contains("cannot resolve `uses test/core/badge;`")),
+        "expected unresolved-uses error: {diags:#?}"
+    );
+}
+
+#[test]
+fn duplicate_and_self_uses_warn() {
+    let importer = r#"
+        test/ai/card:
+        uses test/core/badge;
+        uses test/core/badge;
+        uses test/ai/card;
+        Card:
+            badge: required Badge,
+            @(badge)
+        ;
+    .
+    "#;
+    let ast = parser::parse_pht(importer, "card.pht").expect("parses");
+    let (_, diags) = build_with_imports(&ast, "card.pht", &[exports_of(BADGE_DEP)]);
+    assert!(
+        diags
+            .iter()
+            .any(|d| d.summary.contains("duplicate `uses test/core/badge;`")),
+        "expected duplicate warning: {diags:#?}"
+    );
+    assert!(
+        diags
+            .iter()
+            .any(|d| d.summary.contains("names this file's own namespace")),
+        "expected self-use warning: {diags:#?}"
+    );
+}

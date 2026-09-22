@@ -7,45 +7,61 @@ use crate::diagnostic::Diagnostic;
 use crate::parser::phenotyper_actions as ast;
 
 use super::{
-    AliasId, AliasInfo, EnumId, EnumInfo, FieldId, FieldInfo, Requiredness, Symbol, SymbolTable,
-    TypeId, TypeInfo,
+    AliasId, AliasInfo, EnumId, EnumInfo, FieldId, FieldInfo, ImportResolution, Requiredness,
+    Symbol, SymbolTable, TypeId, TypeInfo,
 };
 
-/// Walk the AST and build the initial symbol table with all declarations.
+/// Walk the AST and fill the symbol table with all declarations. The table
+/// arrives with its namespace set and any `uses` imports already in scope
+/// (so shadowing can be warned about here).
 ///
 /// Detects:
 /// - Duplicate type names (singular, plural, enum, alias)
 /// - Singular/plural name collisions
 /// - Duplicate field names within a type
 /// - Duplicate enum member names
+/// - Local declarations shadowing an import (warning, REQ-LANG-003)
 pub fn collect_symbols(
     file_ast: &ast::File,
+    table: &mut SymbolTable,
     file: &str,
     diags: &mut Vec<Diagnostic>,
-) -> SymbolTable {
-    let mut table = SymbolTable {
-        namespace: file_ast.ns.path.clone(),
-        types: Vec::new(),
-        enums: Vec::new(),
-        aliases: Vec::new(),
-        names: HashMap::new(),
-    };
-
+) {
     // Process top-level declarations
     if let Some(ref decls) = file_ast.ns.decls {
         for decl in decls {
             match decl {
                 ast::TopLevelDecl::TypeDecl(td) => {
-                    collect_type_decl(td, file, diags, &mut table);
+                    collect_type_decl(td, file, diags, table);
                 }
                 ast::TopLevelDecl::TypeDef(td) => {
-                    collect_type_def(td, file, diags, &mut table);
+                    collect_type_def(td, file, diags, table);
                 }
             }
         }
     }
+}
 
-    table
+/// A local declaration shadows an imported name: allowed, but warned about
+/// with the exporting namespace(s) named (REQ-LANG-003).
+fn warn_if_shadows(table: &SymbolTable, name: &str, file: &str, diags: &mut Vec<Diagnostic>) {
+    match table.imported(name) {
+        Some(ImportResolution::One(is)) => diags.push(super::warning(
+            file,
+            format!(
+                "local declaration `{name}` shadows the import from `{}`",
+                is.namespace
+            ),
+        )),
+        Some(ImportResolution::Ambiguous(nss)) => diags.push(super::warning(
+            file,
+            format!(
+                "local declaration `{name}` shadows imports from {}",
+                nss.join(", ")
+            ),
+        )),
+        None => {}
+    }
 }
 
 /// Collect a `type Name: ...;` declaration (alias or enum).
@@ -66,6 +82,7 @@ fn collect_type_decl(
                 return;
             }
 
+            warn_if_shadows(table, name, file, diags);
             table.aliases.push(AliasInfo {
                 id: alias_id,
                 name: name.clone(),
@@ -92,6 +109,7 @@ fn collect_type_decl(
                 }
             }
 
+            warn_if_shadows(table, name, file, diags);
             table.enums.push(EnumInfo {
                 id: enum_id,
                 name: name.clone(),
@@ -178,6 +196,7 @@ fn collect_type_def(
     }
 
     // Register the type
+    warn_if_shadows(table, singular, file, diags);
     table.types.push(TypeInfo {
         id: type_id,
         singular_name: singular.clone(),
@@ -190,6 +209,7 @@ fn collect_type_def(
 
     // Register the plural companion name
     if let Some(plural_name) = plural {
+        warn_if_shadows(table, &plural_name, file, diags);
         table
             .names
             .insert(plural_name, Symbol::PluralCompanion { type_id });

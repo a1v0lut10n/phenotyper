@@ -4,7 +4,7 @@
 use crate::diagnostic::Diagnostic;
 use crate::parser::phenotyper_actions as ast;
 
-use super::{PrimitiveType, Symbol, SymbolTable, TypeId};
+use super::{PrimitiveType, ResolvedSymbol, Symbol, SymbolTable, TypeId};
 
 /// Resolve all type and field references in the AST against the symbol table.
 ///
@@ -114,14 +114,26 @@ fn resolve_type_name(
         | ast::TypeName::Time
         | ast::TypeName::DateTime => {}
 
-        ast::TypeName::UserDefined(ud) => {
-            if table.resolve(&ud.name).is_none() {
+        ast::TypeName::UserDefined(ud) => match table.resolve_any(&ud.name) {
+            Some(ResolvedSymbol::Local(_) | ResolvedSymbol::Imported(_)) => {}
+            Some(ResolvedSymbol::Ambiguous(namespaces)) => {
+                diags.push(super::error(
+                    file,
+                    format!(
+                        "ambiguous type `{}` referenced in `{context_type}`: imported from {} \
+                         (REQ-LANG-003) — declare it in one namespace, or drop the other `uses`",
+                        ud.name,
+                        namespaces.join(" and ")
+                    ),
+                ));
+            }
+            None => {
                 diags.push(super::error(
                     file,
                     format!("unknown type `{}` referenced in `{context_type}`", ud.name),
                 ));
             }
-        }
+        },
     }
 }
 

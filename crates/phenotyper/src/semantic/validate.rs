@@ -40,6 +40,24 @@ fn validate_type(
         ));
     }
 
+    // Imported types inside unions are not supported yet (PHT-0027 keeps
+    // union variant naming local); reject them honestly rather than let
+    // codegen emit an unusable variant.
+    for field in &pt.fields {
+        if let ValueType::Union(members) = &field.ty {
+            if members.iter().any(|m| matches!(m, ValueType::Imported(_))) {
+                diags.push(super::error(
+                    file,
+                    format!(
+                        "field `{}` in type `{}`: imported types are not yet supported \
+                         inside unions",
+                        field.name, pt.singular_name
+                    ),
+                ));
+            }
+        }
+    }
+
     // Validate each render node
     for node in &pt.render {
         validate_render_node(node, pt, module, file, diags, false);
@@ -299,8 +317,15 @@ fn is_collection_type(ty: &ValueType, cardinality: &Cardinality) -> bool {
     if *cardinality != Cardinality::One {
         return true;
     }
-    // Plural type references are collections
-    matches!(ty, ValueType::UserPlural { .. })
+    // Plural type references are collections — local or imported
+    matches!(
+        ty,
+        ValueType::UserPlural { .. }
+            | ValueType::Imported(crate::ir::ImportedRef {
+                kind: crate::symbol::ImportedKind::Plural,
+                ..
+            })
+    )
 }
 
 /// Extract the referenced TypeId from a value type, if it references a phenotype.

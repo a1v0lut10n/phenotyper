@@ -13,7 +13,7 @@
 use crate::diagnostic::Diagnostic;
 use crate::parser::phenotyper_actions as ast;
 use crate::symbol::{
-    Cardinality, FieldId, PrimitiveType, Requiredness, Symbol, SymbolTable, TypeId,
+    Cardinality, FieldId, PrimitiveType, Requiredness, ResolvedSymbol, Symbol, SymbolTable, TypeId,
 };
 
 use super::{
@@ -257,15 +257,22 @@ fn lower_type_name(
         ast::TypeName::Time => ValueType::Primitive(PrimitiveType::Time),
         ast::TypeName::DateTime => ValueType::Primitive(PrimitiveType::DateTime),
 
-        // User-defined: resolve via symbol table
-        ast::TypeName::UserDefined(ud) => match table.resolve(&ud.name) {
-            Some(Symbol::Phenotype(id)) => ValueType::UserSingular(*id),
-            Some(Symbol::PluralCompanion { type_id }) => ValueType::UserPlural {
-                collection_of: *type_id,
-            },
-            Some(Symbol::Enum(id)) => ValueType::Enum(*id),
-            Some(Symbol::Alias(id)) => ValueType::TypeAlias(*id),
-            None => {
+        // User-defined: resolve via symbol table (locals shadow imports)
+        ast::TypeName::UserDefined(ud) => match table.resolve_any(&ud.name) {
+            Some(ResolvedSymbol::Local(Symbol::Phenotype(id))) => ValueType::UserSingular(*id),
+            Some(ResolvedSymbol::Local(Symbol::PluralCompanion { type_id })) => {
+                ValueType::UserPlural {
+                    collection_of: *type_id,
+                }
+            }
+            Some(ResolvedSymbol::Local(Symbol::Enum(id))) => ValueType::Enum(*id),
+            Some(ResolvedSymbol::Local(Symbol::Alias(id))) => ValueType::TypeAlias(*id),
+            Some(ResolvedSymbol::Imported(is)) => ValueType::Imported(super::ImportedRef {
+                namespace: is.namespace.clone(),
+                name: is.name.clone(),
+                kind: is.kind,
+            }),
+            Some(ResolvedSymbol::Ambiguous(_)) | None => {
                 // Already reported by symbol resolution pass, but be defensive
                 diags.push(super::error(
                     file,

@@ -259,7 +259,7 @@ dependencies = [
 
 [[package]]
 name = "phenotyper"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "rustemo",
  "rustemo-compiler",
@@ -270,7 +270,7 @@ dependencies = [
 
 [[package]]
 name = "phenotyper-cli"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "phenotyper",
