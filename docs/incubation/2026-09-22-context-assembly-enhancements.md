@@ -38,6 +38,57 @@ does not have, roughly in order of leverage.
    the phenotype carries the typed contract for degradation. This is
    new language surface and deserves a design pass before syntax.
 
+## 2026-10-19 — the synthesis from genite's October
+
+Item 3 ripened while genite built around phenotyper's byte-stability
+(the embed arc, GEN-080, and the prompt-cache incubation). Four
+findings for the design pass, so it starts from the October
+understanding:
+
+1. **The budget is a caller-supplied measure.** No tokenizer in
+   phenotyper — `render_with_budget` takes a measure closure
+   (`fn(&str) -> usize`); genite passes its tokenizer's counter,
+   aicogito its own, tests pass `str::len`. Budgets become token-true
+   while the crate stays measurement-agnostic.
+
+2. **Three annotation dimensions, one syntax pass.** Elasticity (what
+   may shrink: `droppable`, `truncatable` with a floor and marker, a
+   priority order) is one of THREE annotation classes the same nodes
+   now want: VOLATILITY (genite's prompt-cache note: a volatile clock
+   line mid-prompt invalidates a cross-session KV prefix store —
+   stable-before-volatile ordering maximises the prefix BY
+   CONSTRUCTION) and SEGMENT IDENTITY (a cacheable unit's boundary =
+   a phenotype node; the content hash is the cache key). Designing
+   elasticity's syntax alone retrofits the other two later; one pass
+   should hold all three.
+
+3. **Degrade-to-fit is an admission-policy primitive, not a
+   truncation nicety.** A turn whose context need exceeds a brain's
+   admissible context can today only wait or route elsewhere; a
+   phenotype that exposes its FLOOR need (everything droppable
+   dropped) gives the capacity competition a third option — run
+   degraded now against run whole later — priced like everything
+   else. The generated renderer reporting (full_need, floor_need,
+   Degradations) is the whole interface the competition requires.
+
+4. **Degradation must be deterministic and byte-stable** for a given
+   (content, budget, measure) — dropping at node boundaries, never
+   mid-text re-flow — or it quietly destroys the KV-reuse and
+   content-hash wins that made phenotyper load-bearing. Node-aligned
+   drops also hand the prompt-cache splice rung segment-aligned
+   degradation for free.
+
+**The strict-determinism guarantee (binding).** Phenotyper must remain
+usable in a STRICTLY DETERMINISTIC mode — code generation being the
+canonical consumer: same source, same inputs, same bytes, always.
+Therefore: annotations are INERT unless the caller invokes the
+budgeted renderer (a phenotype carrying elasticity renders via the
+plain `render()` exactly as it does today, byte-identical); the
+budgeted path is itself a pure function of (content, budget, measure);
+and nothing — no clock, no environment, no iteration-order hazard —
+may enter either path. Elasticity adds a second DETERMINISTIC
+renderer, never a nondeterministic one.
+
 Non-goals, to keep the crate's shape: no tokenizer dependency, no
 runtime template engine (build-time codegen stays), no LLM/provider
 awareness. The consumer brings the intelligence; phenotyper guarantees
