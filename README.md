@@ -831,6 +831,6 @@ Phenotyper is a foundation for:
 
 ## License
 
-Copyright 2026 Hans Van Wesenbeeck.
+Copyright 2019-2026 Hans Van Wesenbeeck.
 
 Licensed under the Apache License, Version 2.0 — see [LICENSE](LICENSE).
