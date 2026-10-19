@@ -831,6 +831,6 @@ Phenotyper is a foundation for:
 
 ## License
 
-Copyright 2008-2026 Hans Van Wesenbeeck.
+Copyright 2008-2026 Hans Van Wesenbeeck (hvw@aivolution.ch).
 
 Licensed under the Apache License, Version 2.0 — see [LICENSE](LICENSE).
