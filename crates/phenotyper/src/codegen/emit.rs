@@ -28,6 +28,9 @@ pub fn emit_module(module: &PhenotypeModule) -> String {
 
     // Render trait definition (REQ-CODEGEN-006)
     emit_render_trait(&mut out);
+    if super::budget::module_annotated(module) {
+        super::budget::emit_budget_runtime(&mut out);
+    }
 
     // BuildError enum (REQ-CODEGEN-005)
     emit_build_error(&mut out);
@@ -183,6 +186,7 @@ fn emit_phenotype_type(pt: &PhenotypeType, module: &PhenotypeModule, out: &mut S
 
     // Render impl (REQ-CODEGEN-006)
     emit_render_impl(pt, module, out);
+    super::budget::emit_budgeted_impl(pt, module, out);
 
     // Plural wrapper (REQ-CODEGEN-003)
     if let Some(ref plural_name) = pt.plural_name {
@@ -346,7 +350,7 @@ fn emit_render_impl(pt: &PhenotypeType, module: &PhenotypeModule, out: &mut Stri
     }
 }
 
-fn emit_render_node(
+pub(crate) fn emit_render_node(
     node: &RenderNode,
     pt: &PhenotypeType,
     module: &PhenotypeModule,
@@ -472,7 +476,7 @@ fn emit_render_node(
 
 /// Emit a render node inside an @ifset guard, where the guarded field's
 /// reference is through `val` rather than `self.field_name`.
-fn emit_guarded_render_node(
+pub(crate) fn emit_guarded_render_node(
     node: &RenderNode,
     pt: &PhenotypeType,
     module: &PhenotypeModule,
@@ -903,7 +907,7 @@ fn emit_item_render(var_name: &str, ty: &ValueType, out: &mut String, indent: &s
 }
 
 /// Whether a value type needs `.render_into()` (vs direct string ops).
-fn needs_render_into(ty: &ValueType) -> bool {
+pub(crate) fn needs_render_into(ty: &ValueType) -> bool {
     !matches!(
         ty,
         ValueType::Primitive(PrimitiveType::String)

@@ -245,9 +245,38 @@ Badge plural Badges:
             .map(|o| (o.namespace.clone(), o.code.clone()))
             .collect::<Vec<_>>()
     };
+    let a = compile(&root_a, "annot-out");
+    let b = compile(&root_b, "plain-out");
+    // P2: the annotated exporter grows the budgeted machinery, so the
+    // guarantee is the designed one — the RENDER PATH is identical.
+    let renders = |outs: &[(String, String)]| -> String {
+        outs.iter()
+            .map(|(ns, code)| {
+                let blocks: String = {
+                    let mut out = String::new();
+                    let mut lines = code.lines();
+                    while let Some(line) = lines.next() {
+                        if line.starts_with("impl Render for ") {
+                            out.push_str(line);
+                            out.push('\n');
+                            for l in lines.by_ref() {
+                                out.push_str(l);
+                                out.push('\n');
+                                if l == "}" {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    out
+                };
+                format!("{ns}:\n{blocks}")
+            })
+            .collect()
+    };
     assert_eq!(
-        compile(&root_a, "annot-out"),
-        compile(&root_b, "plain-out"),
-        "annotations in the exporting namespace must not change generated code"
+        renders(&a),
+        renders(&b),
+        "annotations in the exporting namespace must not change the render path"
     );
 }

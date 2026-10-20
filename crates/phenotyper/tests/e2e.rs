@@ -733,14 +733,14 @@ fn e2e_nested_basic_no_parent_context() {
 // PHT-0028: annotations are INERT under plain render — the golden
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// The binding guarantee, pinned at its strongest: the GENERATED CODE
-/// for an annotated template is byte-identical to its unannotated
-/// twin. Code generation's determinism contract survives annotation
-/// adoption wholesale.
+/// The binding guarantee at its designed strength: the RENDER PATH of
+/// an annotated template is byte-identical to its unannotated twin —
+/// the `impl Render` blocks match exactly, and running both yields the
+/// same bytes. (P2 adds `render_budgeted` beside render, so whole-file
+/// code equality no longer holds — by design.)
 #[test]
 fn annotations_are_inert_under_plain_render() {
-    let plain = compile_ok(
-        r#"aivolution/test/annotations:
+    let plain_src = r#"aivolution/test/annotations:
 
 Evidence:
     hits: optional string,
@@ -749,10 +749,8 @@ Evidence:
     "e: ", @ifset(hits) { @(hits), " " }, @(page), @(stamp)
 ;
 .
-"#,
-    );
-    let annotated = compile_ok(
-        r#"aivolution/test/annotations:
+"#;
+    let annotated_src = r#"aivolution/test/annotations:
 
 Evidence:
     hits: optional string elastic(drop, priority 1),
@@ -761,12 +759,47 @@ Evidence:
     "e: ", @ifset(hits) { @(hits), " " }, @(page), @(stamp)
 ;
 .
-"#,
-    );
+"#;
+    let plain = compile_ok(plain_src);
+    let annotated = compile_ok(annotated_src);
     assert_eq!(
-        plain, annotated,
-        "annotations must generate nothing under plain render"
+        render_impl_blocks(&plain),
+        render_impl_blocks(&annotated),
+        "the plain render path must not change under annotations"
     );
+    assert!(
+        annotated.contains("pub fn render_budgeted"),
+        "the annotated twin grows the budgeted renderer"
+    );
+    // And the rendered bytes agree, by running both.
+    let main_code = r#"
+    let e = Evidence { hits: Some("h".into()), page: "p".into(), stamp: "s".into() };
+    print!("{}", e.render());
+"#;
+    let a = compile_and_run(&plain, main_code, "inert-plain");
+    let b = compile_and_run(&annotated, main_code, "inert-annotated");
+    assert_eq!(a, b, "render() output must be byte-identical");
+}
+
+/// Every `impl Render for … { … }` block, concatenated — the plain
+/// render path, isolated from the budgeted additions.
+fn render_impl_blocks(code: &str) -> String {
+    let mut out = String::new();
+    let mut lines = code.lines();
+    while let Some(line) = lines.next() {
+        if line.starts_with("impl Render for ") {
+            out.push_str(line);
+            out.push('\n');
+            for l in lines.by_ref() {
+                out.push_str(l);
+                out.push('\n');
+                if l == "}" {
+                    break;
+                }
+            }
+        }
+    }
+    out
 }
 
 #[test]
@@ -786,4 +819,109 @@ Card:
             .any(|e| e.summary.contains("declares `elastic` more than once")),
         "{errs:?}"
     );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHT-0028 P2: the budgeted renderer, executed
+// ═══════════════════════════════════════════════════════════════════════════
+
+const BUDGET_SRC: &str = r##"aivolution/test/budget:
+
+Hit plural Hits:
+    line: required string,
+    "\n- ", @(line)
+;
+
+Pack:
+    title: required string segment("title"),
+    guidance: optional string elastic(drop, priority 1),
+    hits: required Hits elastic(drop, priority 2),
+    page: required string elastic(truncate, marker "..."),
+    clock: required string volatile,
+    "# ", @(title),
+    @ifset(guidance) { "\nG: ", @(guidance) },
+    @join(hits, ""),
+    "\nP: ", @(page),
+    "\nT: ", @(clock)
+;
+.
+"##;
+
+fn budget_main() -> &'static str {
+    r#"
+    let pack = Pack {
+        title: "T".into(),
+        guidance: Some("be brief".into()),
+        hits: Hits::from_vec(vec![
+            Hit { line: "h1".into() },
+            Hit { line: "h2".into() },
+            Hit { line: "h3".into() },
+        ]),
+        page: "0123456789".into(),
+        clock: "23:41".into(),
+    };
+    let len = |s: &str| s.len();
+    let full = pack.render();
+
+    // A roomy budget: zero degradation, text identical to render().
+    let b = pack.render_budgeted(&Budget { limit: 10_000, measure: &len, floors: Floors::none() });
+    assert_eq!(b.text, full);
+    assert_eq!(b.cost, b.full_cost);
+    assert!(b.dropped.is_empty() && b.truncated.is_empty());
+    // Determinism: twice is identical.
+    let b2 = pack.render_budgeted(&Budget { limit: 10_000, measure: &len, floors: Floors::none() });
+    assert_eq!(b, b2);
+    // The stable prefix ends where the clock's content begins.
+    assert_eq!(b.stable_len, full.len() - "23:41".len());
+    // The segment names the title's exact span.
+    assert_eq!(b.segments.len(), 1);
+    assert_eq!(&full[b.segments[0].1.clone()], "T");
+
+    // Priority 1 drops first: a budget exactly without the guidance.
+    let without_g = full.len() - "
+G: be brief".len();
+    let b = pack.render_budgeted(&Budget { limit: without_g, measure: &len, floors: Floors::none() });
+    assert_eq!(b.dropped, vec!["guidance"]);
+    assert!(b.truncated.is_empty());
+    assert_eq!(b.cost, without_g);
+    assert!(b.text.contains("- h3"));
+
+    // Tighter: the hits tail drops next, later items first.
+    let b = pack.render_budgeted(&Budget { limit: without_g - 3, measure: &len, floors: Floors::none() });
+    assert!(b.dropped.contains(&"guidance") && b.dropped.contains(&"hits"));
+    assert!(b.text.contains("- h1"));
+    assert!(!b.text.contains("- h3"));
+    assert!(b.cost <= without_g - 3);
+
+    // Tighter still: the page truncates, marker appended.
+    let b = pack.render_budgeted(&Budget { limit: 22, measure: &len, floors: Floors::none() });
+    assert!(b.truncated.contains(&"page"), "{:?}", b);
+    assert!(b.text.contains("..."));
+    assert!(b.cost <= 22, "{} > 22", b.cost);
+
+    // Floor honesty: an impossible budget reports cost > limit, equal
+    // to the floor render, with a per-field floor holding five units
+    // of page.
+    let floors = Floors { default: 0, per_field: &[("page", 5)] };
+    let b = pack.render_budgeted(&Budget { limit: 1, measure: &len, floors });
+    assert!(b.cost > 1);
+    assert_eq!(b.cost, b.floor_cost);
+    let page_kept: String = b.text.chars().skip_while(|c| *c != 'P').collect();
+    assert!(page_kept.len() >= 5, "the floor held: {page_kept}");
+
+    // A non-additive measure (words): the guarantee still holds.
+    let words = |s: &str| s.split_whitespace().count();
+    let wfull = words(&full);
+    let b = pack.render_budgeted(&Budget { limit: wfull - 2, measure: &words, floors: Floors::none() });
+    assert!(b.cost <= wfull - 2, "{} > {}", b.cost, wfull - 2);
+
+    print!("ok");
+"#
+}
+
+#[test]
+fn the_budgeted_renderer_holds_its_contracts() {
+    let code = compile_ok(BUDGET_SRC);
+    let out = compile_and_run(&code, budget_main(), "budgeted");
+    assert_eq!(out, "ok");
 }
