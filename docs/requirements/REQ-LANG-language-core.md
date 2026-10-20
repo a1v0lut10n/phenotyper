@@ -299,3 +299,39 @@ Numeric literals are not needed in the language itself (numbers are runtime fiel
 ## REQ-LANG-020 — Whitespace
 
 Whitespace is not semantically significant except as a separator between tokens.
+
+## REQ-LANG-021 — Field annotations (PHT-0028)
+
+A field declaration MAY carry annotation clauses after its type
+expression, in any order, at most one of each kind:
+
+- `volatile` — the field's rendered content changes between renders
+  that mean the same thing (clocks, live measurements). Within a
+  type's template, no stable field reference may follow the first
+  volatile one; violating order is a compile error. Volatility is
+  transitive through same-module phenotype-typed fields; literal text
+  is exempt (a volatile unit may finish its own sentence). Imported
+  types are conservatively treated as stable (cross-namespace
+  volatility metadata is future work).
+- `segment("name")` — the field's rendered span is a named cacheable
+  unit, reported by the budgeted renderer as exact byte ranges.
+- `elastic(drop, priority N)` — the field's contribution may vanish
+  whole under a budget (lower N drops first; ties resolve
+  later-in-template first). The field MUST be able to render as
+  unset: optional (every reference then sits under `@ifset` per
+  REQ-LANG-014's existing rule) or a collection (whose join drops
+  tail items). Violations are compile errors.
+- `elastic(truncate, marker "…")` — the field may be cut with the
+  authored marker appended; the field MUST be a scalar string.
+  Truncation floors are NOT template syntax: they arrive at render
+  time, in the caller's measure units.
+
+Annotations are INERT under plain rendering: a template carrying them
+renders byte-identically to its unannotated twin, and the generated
+`impl Render` is byte-identical. They exist for the budgeted renderer
+(REQ-CODEGEN-013) and for compile-time cache-order enforcement.
+
+Rationale: fine-tuned prompt generation. Byte-stable prompts feed LLM
+KV-cache prefix reuse; `volatile` makes cache-hostile ordering
+unwritable; `elastic` lets one template serve every context budget
+with the degradation contract typed instead of hand-rolled.

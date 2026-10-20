@@ -55,3 +55,4 @@ v1 — Master index of all v1 requirements documents.
 | Project README | [README.md](../../README.md) |
 | CSV Examples | [csv.md](../examples/csv.md), [csv.pht](../examples/csv.pht) |
 | Roadmap Voice Notes | [2026-03-21-roadmap.md](../voice-notes/2026-03-21-roadmap.md) |
+| Field annotations & budgeted rendering (PHT-0028) | REQ-LANG-021, REQ-CODEGEN-013 |

@@ -242,3 +242,31 @@ Generated Rust code shall be organized into modules matching the namespace path:
 
 - `aivolution/format/csv` → `aivolution/format/csv.rs` (or `aivolution/format/csv/mod.rs`)
 - A root `mod.rs` shall re-export generated types.
+
+## REQ-CODEGEN-013 — Budgeted rendering (PHT-0028)
+
+For every type carrying REQ-LANG-021 annotations (and no parent
+context), codegen MUST emit, beside the unchanged `Render` impl:
+
+    pub fn render_budgeted(&self, budget: &Budget<'_>) -> Budgeted
+
+with module-level support emitted once per annotated module:
+
+- `Budget { limit, measure: &dyn Fn(&str) -> usize, floors }` — the
+  measure is the CALLER'S (token counters included; the crate gains no
+  tokenizer); `Floors` carries a uniform default and per-field
+  overrides, in measure units.
+- `Budgeted { text, cost, full_cost, floor_cost, dropped, truncated,
+  stable_len, segments }` — `cost` is `measure(text)` and may exceed
+  `limit` only when the floor render itself does, reported honestly;
+  `stable_len` is the byte offset of the first volatile content
+  (`text.len()` when none); `segments` are named byte ranges.
+
+The degradation algorithm is a pure function of (field values, budget,
+measure): drops by priority ascending (later-in-template first among
+equals), then plural tail drops and string truncations by binary
+search, the whole candidate re-measured after every step so the budget
+guarantee holds for any deterministic measure, and every cut landing
+on a node boundary (a whole field, a whole plural item, or a char
+boundary with the authored marker). Two renders of the same values
+under the same budget MUST be identical.
