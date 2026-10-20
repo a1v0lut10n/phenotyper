@@ -47,10 +47,12 @@ grammar's existing clause position:
   join degrades by dropping TAIL items first — the caller orders the
   list, so "the tail is cheapest" is the caller's contract). Dropping
   renders exactly as unset does today — no new text machinery.
-- **`elastic(truncate, floor N, marker "…")`** — a string field may be
-  cut at a char floor with the marker appended. The floor is characters
-  (the language stays measurement-agnostic); the marker is part of the
-  template's own text, authored where it shows.
+- **`elastic(truncate, marker "…")`** — a string field may be cut,
+  marker appended. The FLOOR LIVES AT RENDER TIME, in the caller's
+  measure units (decision 2): the template authors what may bend and
+  how the cut reads; the caller decides how far it may bend per call.
+  The cut point for a non-char measure is found by binary search on
+  the measure — deterministic for any deterministic measure.
 - **`volatile`** — the field's content changes between renders that
   mean the same thing (clocks, live numbers). Compile check: within a
   phenotype, no stable reference may follow the first volatile one
@@ -69,8 +71,16 @@ template order, later first — the tail is cheapest, everywhere.
 
 `render()` is untouched. Annotated phenotypes additionally generate:
 
-    fn render_budgeted(&self, budget: usize, measure: &dyn Fn(&str) -> usize)
-        -> Budgeted;
+    fn render_budgeted(&self, budget: &Budget<'_>) -> Budgeted;
+
+    struct Budget<'a> {
+        limit: usize,
+        measure: &'a dyn Fn(&str) -> usize,
+        /// Truncation floors in MEASURE units (decision 2): a uniform
+        /// default plus per-field overrides; absent means floor 0
+        /// (a truncatable field may vanish to its marker).
+        floors: Floors<'a>,
+    }
 
     struct Budgeted {
         text: String,
@@ -134,13 +144,16 @@ provider awareness.
   so the GEN-081 arrangement is compiler-enforced instead of
   comment-enforced.
 
-## Open questions for the owner
+## Decisions (owner, 2026-10-20)
 
-1. Annotation keyword spelling: bare clauses (`elastic(...)`,
-   `volatile`) as drafted, or `@`-prefixed to rhyme with template
-   directives (`@elastic`, `@volatile`)?
-2. Should `truncate` floors be expressible in the measure's units at
-   render time (floor given to `render_budgeted` per call) or stay
-   template-fixed chars as drafted?
-3. v1 or v2 grammar as the base? The clauses fit both; if the v2
-   namespace work lands first, annotations ride it.
+1. **Bare clauses** (`elastic(...)`, `volatile`, `segment(...)`) — no
+   `@` prefix; the `@` family stays template-side.
+2. **Floors live at render time, in measure units** — the template
+   authors what may bend and how the cut reads (the marker); the
+   caller decides how far, per call, through `Budget::floors`. More
+   flexible, and it keeps the template free of measurement
+   assumptions entirely.
+3. **The v1 grammar is the base.** Namespace RESOLUTION already landed
+   (PHT-0027, `uses` with cross-namespace codegen, 0.3.0); the v2
+   STRUCTURAL syntax remains a draft. The clauses fit both, so they
+   ride into v2 unchanged whenever it lands — nothing waits.
