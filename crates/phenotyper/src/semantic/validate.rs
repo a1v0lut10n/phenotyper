@@ -91,20 +91,20 @@ fn validate_elasticity(pt: &PhenotypeType, file: &str, diags: &mut Vec<Diagnosti
                     ));
                 }
             }
-            Some(crate::ir::Elastic::Truncate { .. }) => {
-                if !is_scalar_string(&field.ty) || is_collection_type(&field.ty, &field.cardinality)
-                {
-                    diags.push(super::error(
-                        file,
-                        format!(
-                            "field `{}` in type `{}`: elastic(truncate) cuts text — it needs \
-                             a scalar string field",
-                            field.name, pt.singular_name
-                        ),
-                    ));
-                }
+            Some(crate::ir::Elastic::Truncate { .. })
+                if !is_scalar_string(&field.ty)
+                    || is_collection_type(&field.ty, &field.cardinality) =>
+            {
+                diags.push(super::error(
+                    file,
+                    format!(
+                        "field `{}` in type `{}`: elastic(truncate) cuts text — it needs \
+                         a scalar string field",
+                        field.name, pt.singular_name
+                    ),
+                ));
             }
-            None => {}
+            Some(crate::ir::Elastic::Truncate { .. }) | None => {}
         }
     }
 }
