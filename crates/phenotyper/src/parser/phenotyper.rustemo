@@ -52,11 +52,22 @@ PluralClause: 'plural' plural_name=Ident;
 
 BodyItem: name=Ident plural_clause=PluralClause ':' items=BodyItem+[Comma] ';' {NestedTypePlural}
         | name=Ident ':' items=BodyItem+[Comma] ';' {NestedType}
-        | name=Ident ':' req=Requiredness type_expr=TypeExpr {Field}
+        | name=Ident ':' req=Requiredness type_expr=TypeExpr annotations=Annotation* {Field}
         | render=RenderExpr {Render}
         ;
 
 Requiredness: 'required' {Req} | 'optional' {Opt};
+
+// ---------------------------------------------------------------------------
+// Field annotations (PHT-0028): elasticity, volatility, segments.
+// Inert under plain render() — they generate metadata and checks, never text.
+// ---------------------------------------------------------------------------
+
+Annotation: 'volatile' {Volatile}
+          | 'segment' '(' name=StringLiteral ')' {Segment}
+          | 'elastic' '(' 'drop' ',' 'priority' priority=IntLiteral ')' {ElasticDrop}
+          | 'elastic' '(' 'truncate' ',' 'marker' marker=StringLiteral ')' {ElasticTruncate}
+          ;
 
 // ---------------------------------------------------------------------------
 // Type expressions
@@ -120,6 +131,7 @@ Cornc: Comment | NotComment | WS;
 terminals
 
 Ident: /[A-Za-z_][A-Za-z0-9_]*/;
+IntLiteral: /[0-9]+/;
 StringLiteral: /"([^"\\]|\\.)*"/;
 
 // Language keywords (v2: 'namespace' removed)
@@ -128,6 +140,15 @@ Type: 'type';
 Plural: 'plural';
 Required: 'required';
 Optional: 'optional';
+
+// Annotation keywords (PHT-0028)
+Volatile: 'volatile';
+Segment: 'segment';
+Elastic: 'elastic';
+Drop: 'drop';
+Priority: 'priority';
+Truncate: 'truncate';
+Marker: 'marker';
 
 // Primitive type keywords (lexically reserved per DEC-007)
 KwString: 'string';

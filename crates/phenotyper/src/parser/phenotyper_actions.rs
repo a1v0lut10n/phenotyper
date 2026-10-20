@@ -257,9 +257,15 @@ pub fn body_item_field(
     name: Ident,
     req: Requiredness,
     type_expr: TypeExpr,
+    annotations: Annotation0,
 ) -> BodyItem {
     BodyItem::Field(Field {
-        field: FieldDecl { name, req, type_expr },
+        field: FieldDecl {
+            name,
+            req,
+            type_expr,
+            annotations: annotations.unwrap_or_default(),
+        },
     })
 }
 pub fn body_item_render(_ctx: &Ctx, render: RenderExpr) -> BodyItem {
@@ -270,6 +276,9 @@ pub struct FieldDecl {
     pub name: Ident,
     pub req: Requiredness,
     pub type_expr: TypeExpr,
+    /// PHT-0028: elasticity/volatility/segment clauses, inert under
+    /// plain render.
+    pub annotations: Vec<Annotation>,
 }
 pub fn field_decl_c1(
     _ctx: &Ctx,
@@ -277,7 +286,12 @@ pub fn field_decl_c1(
     req: Requiredness,
     type_expr: TypeExpr,
 ) -> FieldDecl {
-    FieldDecl { name, req, type_expr }
+    FieldDecl {
+        name,
+        req,
+        type_expr,
+        annotations: Vec::new(),
+    }
 }
 #[derive(Debug, Clone)]
 pub enum Requiredness {
@@ -543,4 +557,58 @@ pub fn argument_ident_arg(_ctx: &Ctx, val: Ident) -> Argument {
 }
 pub fn argument_literal_arg(_ctx: &Ctx, val: StringLiteral) -> Argument {
     Argument::LiteralArg(LiteralArg { val })
+}
+pub type IntLiteral = String;
+pub fn int_literal(_ctx: &Ctx, token: Token) -> IntLiteral {
+    token.value.into()
+}
+pub type Annotation1 = Vec<Annotation>;
+pub fn annotation1_c1(
+    _ctx: &Ctx,
+    mut annotation1: Annotation1,
+    annotation: Annotation,
+) -> Annotation1 {
+    annotation1.push(annotation);
+    annotation1
+}
+pub fn annotation1_annotation(_ctx: &Ctx, annotation: Annotation) -> Annotation1 {
+    vec![annotation]
+}
+pub type Annotation0 = Option<Annotation1>;
+pub fn annotation0_annotation1(_ctx: &Ctx, annotation1: Annotation1) -> Annotation0 {
+    Some(annotation1)
+}
+pub fn annotation0_empty(_ctx: &Ctx) -> Annotation0 {
+    None
+}
+#[derive(Debug, Clone)]
+pub struct Segment {
+    pub name: StringLiteral,
+}
+#[derive(Debug, Clone)]
+pub struct ElasticDrop {
+    pub priority: IntLiteral,
+}
+#[derive(Debug, Clone)]
+pub struct ElasticTruncate {
+    pub marker: StringLiteral,
+}
+#[derive(Debug, Clone)]
+pub enum Annotation {
+    Volatile,
+    Segment(Segment),
+    ElasticDrop(ElasticDrop),
+    ElasticTruncate(ElasticTruncate),
+}
+pub fn annotation_volatile(_ctx: &Ctx) -> Annotation {
+    Annotation::Volatile
+}
+pub fn annotation_segment(_ctx: &Ctx, name: StringLiteral) -> Annotation {
+    Annotation::Segment(Segment { name })
+}
+pub fn annotation_elastic_drop(_ctx: &Ctx, priority: IntLiteral) -> Annotation {
+    Annotation::ElasticDrop(ElasticDrop { priority })
+}
+pub fn annotation_elastic_truncate(_ctx: &Ctx, marker: StringLiteral) -> Annotation {
+    Annotation::ElasticTruncate(ElasticTruncate { marker })
 }

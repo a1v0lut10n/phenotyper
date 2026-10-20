@@ -211,3 +211,43 @@ fn single_file_compile_with_uses_points_at_roots() {
         "expected unresolved-uses error: {err:#?}"
     );
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHT-0028: annotations ride `uses` — and stay inert across it
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// An exporting namespace whose fields carry every annotation kind
+/// compiles in a set, and its generated code is byte-identical to the
+/// unannotated twin — inertness holds across the import boundary too.
+#[test]
+fn annotations_ride_uses_and_stay_inert() {
+    let annotated_dep = r#"test/core/badge:
+Badge plural Badges:
+    label: required string elastic(truncate, marker "…") segment("badge"),
+    @(label)
+;
+.
+"#;
+    let root_a = scratch("annot-dep");
+    write_ns(&root_a, "test/core/badge", annotated_dep);
+    write_ns(&root_a, "test/ai/card", CARD_ENTRY);
+    let root_b = scratch("plain-dep");
+    write_ns(&root_b, "test/core/badge", BADGE_DEP);
+    write_ns(&root_b, "test/ai/card", CARD_ENTRY);
+
+    let compile = |root: &Path, label: &str| {
+        let out = scratch(label);
+        let entry = root.join("test/ai/card.pht");
+        let outputs = phenotyper::compile_with_roots(&entry, &[root], &out)
+            .unwrap_or_else(|e| panic!("compile failed: {e:#?}"));
+        outputs
+            .iter()
+            .map(|o| (o.namespace.clone(), o.code.clone()))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        compile(&root_a, "annot-out"),
+        compile(&root_b, "plain-out"),
+        "annotations in the exporting namespace must not change generated code"
+    );
+}

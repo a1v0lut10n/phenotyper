@@ -59,6 +59,31 @@ pub struct FieldDef {
     pub requiredness: Requiredness,
     pub cardinality: Cardinality,
     pub ty: ValueType,
+    /// PHT-0028: the field's annotation clauses — inert under plain
+    /// render; metadata for the budgeted renderer (P2) and the
+    /// semantic checks (this slice).
+    pub annotations: FieldAnnotations,
+}
+
+/// PHT-0028: elasticity, volatility and segment identity on one field.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct FieldAnnotations {
+    /// The field's content changes between renders that mean the same
+    /// thing; stable field references may not follow it in a template.
+    pub volatile: bool,
+    /// The field's rendered span is a named cacheable unit.
+    pub segment: Option<String>,
+    /// The field may degrade under a budget.
+    pub elastic: Option<Elastic>,
+}
+
+/// How an elastic field degrades (PHT-0028): whole-node drop by
+/// priority (LOWER drops first), or tail truncation with an authored
+/// marker — the floor arrives at render time, in the caller's measure.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Elastic {
+    Drop { priority: u32 },
+    Truncate { marker: String },
 }
 
 /// A resolved value type — all names have been resolved to IDs.

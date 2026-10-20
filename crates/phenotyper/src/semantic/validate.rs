@@ -62,6 +62,146 @@ fn validate_type(
     for node in &pt.render {
         validate_render_node(node, pt, module, file, diags, false);
     }
+
+    // PHT-0028: the annotation checks.
+    validate_elasticity(pt, file, diags);
+    validate_volatile_order(pt, module, file, diags);
+}
+
+/// PHT-0028: elasticity must be REALISABLE. A `drop` field must render
+/// as unset does today — optional (the existing optional-outside-@ifset
+/// check then guards every reference) or a collection (the join drops
+/// tail items). A `truncate` field must be a scalar string — there is
+/// nothing honest to cut in the middle of an int or a sub-phenotype.
+fn validate_elasticity(pt: &PhenotypeType, file: &str, diags: &mut Vec<Diagnostic>) {
+    for field in &pt.fields {
+        match &field.annotations.elastic {
+            Some(crate::ir::Elastic::Drop { .. }) => {
+                let droppable = field.requiredness == Requiredness::Optional
+                    || is_collection_type(&field.ty, &field.cardinality);
+                if !droppable {
+                    diags.push(super::error(
+                        file,
+                        format!(
+                            "field `{}` in type `{}`: elastic(drop) needs a field that can \
+                             render as unset — make it optional (and guard references \
+                             with @ifset) or a collection",
+                            field.name, pt.singular_name
+                        ),
+                    ));
+                }
+            }
+            Some(crate::ir::Elastic::Truncate { .. })
+                if !is_scalar_string(&field.ty)
+                    || is_collection_type(&field.ty, &field.cardinality) =>
+            {
+                diags.push(super::error(
+                    file,
+                    format!(
+                        "field `{}` in type `{}`: elastic(truncate) cuts text — it needs \
+                         a scalar string field",
+                        field.name, pt.singular_name
+                    ),
+                ));
+            }
+            Some(crate::ir::Elastic::Truncate { .. }) | None => {}
+        }
+    }
+}
+
+/// PHT-0028: stable-before-volatile, by construction. Within a type's
+/// template, no STABLE field reference may follow the first volatile
+/// one — a volatile byte invalidates every cached byte after it, so
+/// stable content downstream of volatile content is a silent KV-reuse
+/// loss (the GEN-081 field lesson, made a compile error). Literal text
+/// is exempt: it belongs to whichever unit it annotates. Volatility is
+/// transitive through same-module phenotype fields.
+fn validate_volatile_order(
+    pt: &PhenotypeType,
+    module: &PhenotypeModule,
+    file: &str,
+    diags: &mut Vec<Diagnostic>,
+) {
+    let volatile_types = volatile_type_set(module);
+    let is_volatile = |id: FieldId| -> bool {
+        find_field(pt, id).is_some_and(|f| {
+            f.annotations.volatile
+                || referenced_type_id(&f.ty).is_some_and(|t| volatile_types.contains(&t))
+        })
+    };
+    let mut first_volatile: Option<FieldId> = None;
+    let mut refs: Vec<FieldId> = Vec::new();
+    collect_field_refs(&pt.render, &mut refs);
+    for id in refs {
+        if is_volatile(id) {
+            first_volatile.get_or_insert(id);
+        } else if let Some(v) = first_volatile {
+            diags.push(super::error(
+                file,
+                format!(
+                    "type `{}`: stable field `{}` is referenced after volatile field `{}` —                      a volatile byte invalidates every cached byte after it; move the                      volatile reference last, or mark `{}` volatile too",
+                    pt.singular_name,
+                    field_id_name(pt, id),
+                    field_id_name(pt, v),
+                    field_id_name(pt, id),
+                ),
+            ));
+            return; // one clear error per type beats a cascade
+        }
+    }
+}
+
+/// Types whose rendered content is volatile — directly or through a
+/// same-module phenotype field (a fixpoint over the module; imported
+/// types are conservatively treated as stable until cross-namespace
+/// metadata lands with P2).
+fn volatile_type_set(module: &PhenotypeModule) -> HashSet<TypeId> {
+    let mut volatile: HashSet<TypeId> = HashSet::new();
+    loop {
+        let mut grew = false;
+        for pt in &module.types {
+            if volatile.contains(&pt.id) {
+                continue;
+            }
+            let is_v = pt.fields.iter().any(|f| {
+                f.annotations.volatile
+                    || referenced_type_id(&f.ty).is_some_and(|t| volatile.contains(&t))
+            });
+            if is_v {
+                volatile.insert(pt.id);
+                grew = true;
+            }
+        }
+        if !grew {
+            return volatile;
+        }
+    }
+}
+
+/// Every field reference in template order, nested bodies flattened in
+/// place (an @ifset's body sits where the @ifset sits).
+fn collect_field_refs(nodes: &[RenderNode], out: &mut Vec<FieldId>) {
+    for node in nodes {
+        match node {
+            RenderNode::Text(_) | RenderNode::ParentFieldRef { .. } => {}
+            RenderNode::Emit(id) => out.push(*id),
+            RenderNode::Join { field, separator } => {
+                out.push(*field);
+                if let SeparatorExpr::Field(id) = separator {
+                    out.push(*id);
+                }
+            }
+            RenderNode::Eol { field } => {
+                if let Some(id) = field {
+                    out.push(*id);
+                }
+            }
+            RenderNode::IfSet { field, body } | RenderNode::IfNotEmpty { field, body } => {
+                out.push(*field);
+                collect_field_refs(body, out);
+            }
+        }
+    }
 }
 
 /// Validate a render node in context.
