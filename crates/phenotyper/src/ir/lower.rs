@@ -17,8 +17,8 @@ use crate::symbol::{
 };
 
 use super::{
-    EnumType, FieldDef, PhenotypeModule, PhenotypeType, RenderNode, SeparatorExpr, TypeAlias,
-    ValueType,
+    Elastic, EnumType, FieldAnnotations, FieldDef, PhenotypeModule, PhenotypeType, RenderNode,
+    SeparatorExpr, TypeAlias, ValueType,
 };
 
 /// Lower the entire module.
@@ -199,7 +199,67 @@ fn lower_field_decl(
         requiredness,
         cardinality,
         ty,
+        annotations: lower_annotations(&field.annotations, &field.name, file, diags),
     })
+}
+
+/// PHT-0028: fold a field's annotation clauses into the IR — duplicate
+/// clauses are an error (one elasticity, one segment, one volatility
+/// per field; the template should read one way).
+fn lower_annotations(
+    clauses: &[ast::Annotation],
+    field_name: &str,
+    file: &str,
+    diags: &mut Vec<Diagnostic>,
+) -> FieldAnnotations {
+    let mut out = FieldAnnotations::default();
+    fn dup(file: &str, field: &str, what: &str, diags: &mut Vec<Diagnostic>) {
+        diags.push(crate::ir::error(
+            file,
+            format!("field `{field}` declares `{what}` more than once"),
+        ));
+    }
+    for clause in clauses {
+        match clause {
+            ast::Annotation::Volatile => {
+                if out.volatile {
+                    dup(file, field_name, "volatile", diags);
+                }
+                out.volatile = true;
+            }
+            ast::Annotation::Segment(seg) => {
+                if out.segment.is_some() {
+                    dup(file, field_name, "segment", diags);
+                }
+                out.segment = Some(strip_string_quotes(&seg.name));
+            }
+            ast::Annotation::ElasticDrop(d) => {
+                if out.elastic.is_some() {
+                    dup(file, field_name, "elastic", diags);
+                }
+                let priority = d.priority.parse::<u32>().unwrap_or_else(|_| {
+                    diags.push(crate::ir::error(
+                        file,
+                        format!(
+                            "field `{field_name}`: elastic priority `{}` is not a small integer",
+                            d.priority
+                        ),
+                    ));
+                    0
+                });
+                out.elastic = Some(Elastic::Drop { priority });
+            }
+            ast::Annotation::ElasticTruncate(t) => {
+                if out.elastic.is_some() {
+                    dup(file, field_name, "elastic", diags);
+                }
+                out.elastic = Some(Elastic::Truncate {
+                    marker: strip_string_quotes(&t.marker),
+                });
+            }
+        }
+    }
+    out
 }
 
 /// Lower a type expression, extracting cardinality.

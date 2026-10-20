@@ -574,3 +574,143 @@ fn valid_nested_with_plural() {
     "#,
     );
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHT-0028: annotation checks
+// ═══════════════════════════════════════════════════════════════════════════
+
+#[test]
+fn elastic_drop_needs_unset_shaped_fields() {
+    let errs = validate_errors(
+        r#"aivolution/test/annotations:
+
+Card:
+    title: required string elastic(drop, priority 1),
+    "t: ", @(title)
+;
+.
+"#,
+    );
+    assert_eq!(errs.len(), 1, "{errs:?}");
+    assert!(
+        errs[0].contains("elastic(drop) needs a field that can render as unset"),
+        "{errs:?}"
+    );
+
+    // Optional + guarded: fine (the existing optional/@ifset check guards refs).
+    let errs = validate_errors(
+        r#"aivolution/test/annotations:
+
+Card:
+    note: optional string elastic(drop, priority 1),
+    "card",
+    @ifset(note) { " note: ", @(note) }
+;
+.
+"#,
+    );
+    assert!(errs.is_empty(), "{errs:?}");
+
+    // A collection: fine (the join drops tail items).
+    let errs = validate_errors(
+        r#"aivolution/test/annotations:
+
+Item plural Items:
+    name: required string,
+    @(name)
+;
+
+List:
+    items: required Items elastic(drop, priority 2),
+    @join(items, ", ")
+;
+.
+"#,
+    );
+    assert!(errs.is_empty(), "{errs:?}");
+}
+
+#[test]
+fn elastic_truncate_needs_a_scalar_string() {
+    let errs = validate_errors(
+        r#"aivolution/test/annotations:
+
+Card:
+    count: required int64 elastic(truncate, marker " [cut]"),
+    @(count)
+;
+.
+"#,
+    );
+    assert_eq!(errs.len(), 1, "{errs:?}");
+    assert!(errs[0].contains("needs a scalar string"), "{errs:?}");
+
+    let errs = validate_errors(
+        r#"aivolution/test/annotations:
+
+Card:
+    body: required string elastic(truncate, marker " [cut]"),
+    @(body)
+;
+.
+"#,
+    );
+    assert!(errs.is_empty(), "{errs:?}");
+}
+
+#[test]
+fn stable_after_volatile_is_a_compile_error() {
+    let errs = validate_errors(
+        r#"aivolution/test/annotations:
+
+Line:
+    stamp: required string volatile,
+    label: required string,
+    @(stamp), " ", @(label)
+;
+.
+"#,
+    );
+    assert_eq!(errs.len(), 1, "{errs:?}");
+    assert!(errs[0].contains("stable field `label` is referenced after volatile field `stamp`"));
+
+    // Volatile last: fine — and trailing literal text is exempt (the
+    // ClockLine shape: a volatile unit may finish its own sentence).
+    let errs = validate_errors(
+        r#"aivolution/test/annotations:
+
+Line:
+    label: required string,
+    stamp: required string volatile,
+    @(label), " at ", @(stamp), " — and nothing advances within the session."
+;
+.
+"#,
+    );
+    assert!(errs.is_empty(), "{errs:?}");
+}
+
+#[test]
+fn volatility_is_transitive_through_same_module_types() {
+    let errs = validate_errors(
+        r#"aivolution/test/annotations:
+
+Clock:
+    instant: required string volatile,
+    @(instant)
+;
+
+Prompt:
+    clock: required Clock,
+    title: required string,
+    @(clock), @(title)
+;
+.
+"#,
+    );
+    assert_eq!(errs.len(), 1, "{errs:?}");
+    assert!(
+        errs[0].contains("stable field `title` is referenced after volatile field `clock`"),
+        "{errs:?}"
+    );
+}

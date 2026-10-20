@@ -728,3 +728,62 @@ fn e2e_nested_basic_no_parent_context() {
         "unexpected render_with_parent — nested_basic has no parent refs"
     );
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHT-0028: annotations are INERT under plain render — the golden
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// The binding guarantee, pinned at its strongest: the GENERATED CODE
+/// for an annotated template is byte-identical to its unannotated
+/// twin. Code generation's determinism contract survives annotation
+/// adoption wholesale.
+#[test]
+fn annotations_are_inert_under_plain_render() {
+    let plain = compile_ok(
+        r#"aivolution/test/annotations:
+
+Evidence:
+    hits: optional string,
+    page: required string,
+    stamp: required string,
+    "e: ", @ifset(hits) { @(hits), " " }, @(page), @(stamp)
+;
+.
+"#,
+    );
+    let annotated = compile_ok(
+        r#"aivolution/test/annotations:
+
+Evidence:
+    hits: optional string elastic(drop, priority 1),
+    page: required string elastic(truncate, marker " [cut]") segment("page"),
+    stamp: required string volatile,
+    "e: ", @ifset(hits) { @(hits), " " }, @(page), @(stamp)
+;
+.
+"#,
+    );
+    assert_eq!(
+        plain, annotated,
+        "annotations must generate nothing under plain render"
+    );
+}
+
+#[test]
+fn duplicate_annotations_are_refused() {
+    let errs = compile_err(
+        r#"aivolution/test/annotations:
+
+Card:
+    note: optional string elastic(drop, priority 1) elastic(drop, priority 2),
+    @ifset(note) { @(note) }
+;
+.
+"#,
+    );
+    assert!(
+        errs.iter()
+            .any(|e| e.summary.contains("declares `elastic` more than once")),
+        "{errs:?}"
+    );
+}
