@@ -331,7 +331,7 @@ renders byte-identically to its unannotated twin, and the generated
 `impl Render` is byte-identical. They exist for the budgeted renderer
 (REQ-CODEGEN-013) and for compile-time cache-order enforcement.
 
-Rationale: fine-tuned prompt generation. Byte-stable prompts feed LLM
+Rationale: fine-tuned context generation. Byte-stable prompts feed LLM
 KV-cache prefix reuse; `volatile` makes cache-hostile ordering
 unwritable; `elastic` lets one template serve every context budget
 with the degradation contract typed instead of hand-rolled.

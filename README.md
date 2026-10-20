@@ -246,9 +246,9 @@ Pure source files support:
 
 ---
 
-### Budget-aware prompt generation (PHT-0028)
+### Budget-aware context generation (PHT-0028)
 
-Phenotyper's first calling is STRUCTURED PROMPTS, and fine-tuned prompt
+Phenotyper's first calling is STRUCTURED PROMPTS, and fine-tuned CONTEXT
 generation is where its determinism pays twice: byte-stable rendering
 feeds LLM KV-cache prefix reuse, and typed degradation lets one
 template serve every context budget. Field declarations take three
