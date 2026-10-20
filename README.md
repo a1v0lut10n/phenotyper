@@ -246,6 +246,61 @@ Pure source files support:
 
 ---
 
+### Budget-aware context generation (PHT-0028)
+
+Phenotyper's first calling is STRUCTURED PROMPTS, and fine-tuned CONTEXT
+generation is where its determinism pays twice: byte-stable rendering
+feeds LLM KV-cache prefix reuse, and typed degradation lets one
+template serve every context budget. Field declarations take three
+annotation clauses — inert under plain `render()`, byte-for-byte:
+
+```pht
+SearchEvidence:
+    guidance: optional string elastic(drop, priority 1),
+    hits: required Hits elastic(drop, priority 2),
+    page: required string elastic(truncate, marker "…"),
+    clock: required string volatile,
+    ...
+;
+```
+
+- **`elastic(drop, priority N)`** — the field's contribution may vanish
+  whole under a budget (lowest priority first); plurals drop tail items,
+  so the caller's ranking decides what survives.
+- **`elastic(truncate, marker "…")`** — a string field may be cut, the
+  authored marker appended. The floor arrives AT RENDER TIME, in the
+  caller's measure units.
+- **`volatile`** — the field's content changes between renders that mean
+  the same thing (clocks, live numbers). Stable content after volatile
+  content is a COMPILE ERROR: a volatile byte invalidates every cached
+  byte after it, so the template enforces cache-friendly ordering by
+  construction.
+- **`segment("name")`** — the rendered span is a named cacheable unit,
+  reported as exact byte ranges.
+
+Annotated types generate a second deterministic renderer beside the
+first:
+
+```rust
+let b = evidence.render_budgeted(&Budget {
+    limit: 4096,                         // in YOUR units…
+    measure: &|s| tokenizer.count(s),    // …because the measure is yours
+    floors: Floors::uniform(64),
+});
+// b.text      — within budget, or the floor render, reported honestly
+// b.cost      — measure(text); b.full_cost / b.floor_cost beside it
+// b.dropped / b.truncated — what bent, by name
+// b.stable_len — bytes before the first volatile content (KV prefix)
+// b.segments  — named byte ranges for content-addressed caching
+```
+
+The whole candidate is re-measured after every degradation step, so the
+budget guarantee holds for ANY deterministic measure — token counters
+included, additive or not. No tokenizer dependency, no runtime template
+engine, no reordering of authored content: the consumer brings the
+intelligence, phenotyper guarantees structure — now under a budget too.
+Design: `docs/design/2026-10-20-elasticity-volatility-and-segments.md`.
+
 ## Two source containers, one core language
 
 Phenotyper supports two normative source containers:
@@ -786,6 +841,8 @@ Phenotyper v2 is a **working compiler** with a complete pipeline:
 | Diagnostics | ✅ Rich human-readable and JSON output |
 | Code generation | ✅ Idiomatic Rust with `render_with_parent` for nested types |
 | Imports (`uses`) | ✅ Compilation sets over search roots, cross-namespace codegen (PHT-0027) |
+| Annotations | ✅ `elastic`/`volatile`/`segment` field clauses, compile-checked, inert under `render()` (PHT-0028) |
+| Budgeted rendering | ✅ `render_budgeted` — caller-supplied measure, render-time floors, honest floor reporting (PHT-0028) |
 | CLI | ✅ `check`, `build` (`--root` for `uses` sets), `dump-ast`, `dump-ir` |
 | Build integration | ✅ `phenotyper::compile()` / `compile_with_roots()` APIs |
 | Test suite | ✅ 271 tests (unit, e2e, CLI, compile, runtime, uses sets) |

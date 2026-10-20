@@ -122,7 +122,7 @@ fn validate_volatile_order(
     file: &str,
     diags: &mut Vec<Diagnostic>,
 ) {
-    let volatile_types = volatile_type_set(module);
+    let volatile_types = crate::ir::volatile_type_set(module);
     let is_volatile = |id: FieldId| -> bool {
         find_field(pt, id).is_some_and(|f| {
             f.annotations.volatile
@@ -147,33 +147,6 @@ fn validate_volatile_order(
                 ),
             ));
             return; // one clear error per type beats a cascade
-        }
-    }
-}
-
-/// Types whose rendered content is volatile — directly or through a
-/// same-module phenotype field (a fixpoint over the module; imported
-/// types are conservatively treated as stable until cross-namespace
-/// metadata lands with P2).
-fn volatile_type_set(module: &PhenotypeModule) -> HashSet<TypeId> {
-    let mut volatile: HashSet<TypeId> = HashSet::new();
-    loop {
-        let mut grew = false;
-        for pt in &module.types {
-            if volatile.contains(&pt.id) {
-                continue;
-            }
-            let is_v = pt.fields.iter().any(|f| {
-                f.annotations.volatile
-                    || referenced_type_id(&f.ty).is_some_and(|t| volatile.contains(&t))
-            });
-            if is_v {
-                volatile.insert(pt.id);
-                grew = true;
-            }
-        }
-        if !grew {
-            return volatile;
         }
     }
 }

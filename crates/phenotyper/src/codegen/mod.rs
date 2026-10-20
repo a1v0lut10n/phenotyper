@@ -17,6 +17,7 @@
 //! let rust_code = codegen::generate(&module);
 //! ```
 
+pub(crate) mod budget;
 mod emit;
 mod naming;
 

@@ -23,6 +23,8 @@ use crate::symbol::{
     AliasId, Cardinality, EnumId, FieldId, ImportedKind, PrimitiveType, Requiredness, TypeId,
 };
 
+use std::collections::HashSet;
+
 // ─── IR data types (REQ-COMP-006) ──────────────────────────────────────────
 
 /// Top-level IR node representing a compiled Phenotyper file.
@@ -173,6 +175,42 @@ pub struct TypeAlias {
     pub id: AliasId,
     pub name: String,
     pub target: ValueType,
+}
+
+/// The user-defined type a field's value type points at, when it does.
+pub fn referenced_type_id_of(ty: &ValueType) -> Option<TypeId> {
+    match ty {
+        ValueType::UserSingular(id) => Some(*id),
+        ValueType::UserPlural { collection_of } => Some(*collection_of),
+        _ => None,
+    }
+}
+
+/// Types whose rendered content is volatile — directly or through a
+/// same-module phenotype field (a fixpoint over the module; imported
+/// types are conservatively treated as stable until cross-namespace
+/// metadata lands with P2).
+pub fn volatile_type_set(module: &PhenotypeModule) -> HashSet<TypeId> {
+    let mut volatile: HashSet<TypeId> = HashSet::new();
+    loop {
+        let mut grew = false;
+        for pt in &module.types {
+            if volatile.contains(&pt.id) {
+                continue;
+            }
+            let is_v = pt.fields.iter().any(|f| {
+                f.annotations.volatile
+                    || referenced_type_id_of(&f.ty).is_some_and(|t| volatile.contains(&t))
+            });
+            if is_v {
+                volatile.insert(pt.id);
+                grew = true;
+            }
+        }
+        if !grew {
+            return volatile;
+        }
+    }
 }
 
 // ─── Entry point ────────────────────────────────────────────────────────────
