@@ -925,3 +925,78 @@ fn the_budgeted_renderer_holds_its_contracts() {
     let out = compile_and_run(&code, budget_main(), "budgeted");
     assert_eq!(out, "ok");
 }
+
+// PHT-0029: a `segment` (or `volatile`) annotation on a NESTED-TYPE
+// field, and on an optional string rendered inside its own `@ifset`
+// (a guarded binding), hit an emitter path that wrote every value
+// with `out.push_str(&…)` — right for an owned string, a type error
+// for a nested type (no `Deref<str>`) and for a guarded `&String`
+// (`&&String`). Field-found by aicogito SUM-0224: the records
+// protocol is a nested phenotype and the daily bullet is a guarded
+// optional string.
+const NESTED_BUDGET_SRC: &str = r##"aivolution/test/nestedbudget:
+
+Inner:
+    body: required string,
+    "[", @(body), "]"
+;
+
+Outer:
+    inner: required Inner segment("inner"),
+    extra: optional Inner segment("extra"),
+    daily: optional string segment("daily"),
+    "H: ",
+    @(inner),
+    @ifset(extra) { " E: ", @(extra) },
+    @ifset(daily) { " D: ", @(daily) },
+    "."
+;
+.
+"##;
+
+fn nested_budget_main() -> &'static str {
+    r#"
+    let full_pack = Outer {
+        inner: Inner { body: "in".into() },
+        extra: Some(Inner { body: "ex".into() }),
+        daily: Some("01-Daily".into()),
+    };
+    let len = |s: &str| s.len();
+    let full = full_pack.render();
+    assert_eq!(full, "H: [in] E: [ex] D: 01-Daily.");
+
+    // Roomy budget: byte-identical to render(), all three segments
+    // naming their exact spans.
+    let b = full_pack.render_budgeted(&Budget { limit: 10_000, measure: &len, floors: Floors::none() });
+    assert_eq!(b.text, full);
+    assert_eq!(b.segments.len(), 3);
+    for (name, range) in &b.segments {
+        let span = &full[range.clone()];
+        match *name {
+            "inner" => assert_eq!(span, "[in]"),
+            "extra" => assert_eq!(span, "[ex]"),
+            "daily" => assert_eq!(span, "01-Daily"),
+            other => panic!("unexpected segment {other}"),
+        }
+    }
+
+    // Unset optionals: no spans for them, text still identical.
+    let bare = Outer {
+        inner: Inner { body: "in".into() },
+        extra: None,
+        daily: None,
+    };
+    let b = bare.render_budgeted(&Budget { limit: 10_000, measure: &len, floors: Floors::none() });
+    assert_eq!(b.text, bare.render());
+    assert_eq!(b.segments.len(), 1);
+
+    print!("ok");
+"#
+}
+
+#[test]
+fn segments_hold_on_nested_types_and_guarded_strings() {
+    let code = compile_ok(NESTED_BUDGET_SRC);
+    let out = compile_and_run(&code, nested_budget_main(), "nestedbudget");
+    assert_eq!(out, "ok");
+}

@@ -12,6 +12,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::ir::{Elastic, PhenotypeModule, PhenotypeType, RenderNode, ValueType};
 use crate::symbol::FieldId;
+use crate::symbol::PrimitiveType;
 
 use super::emit::{emit_guarded_render_node, emit_render_node};
 use super::naming;
@@ -259,6 +260,50 @@ pub fn emit_budgeted_impl(pt: &PhenotypeType, module: &PhenotypeModule, out: &mu
 /// touch annotated fields grow their hooks. `guard` carries the
 /// enclosing `@ifset` field whose value is bound to `val`.
 #[allow(clippy::too_many_arguments)]
+/// Write one field value into the instrumented block exactly as the
+/// standard emitter would: strings append, numbers format, booleans
+/// spell themselves, local user types render through their own
+/// `Render` impl, and imported types go UFCS through the exporter's
+/// trait. `guarded` says `value_expr` is an `@ifset` binding — already
+/// a reference, so no extra `&` (PHT-0029: `&val` on a `&String` made
+/// a `&&String`, and a nested type was pushed as if it were a string).
+fn emit_plain_value_write(
+    ty: &ValueType,
+    value_expr: &str,
+    guarded: bool,
+    module: &PhenotypeModule,
+    out: &mut String,
+    indent: &str,
+) {
+    match ty {
+        ValueType::Primitive(PrimitiveType::Int64 | PrimitiveType::Real64) => {
+            out.push_str(&format!(
+                "{indent}out.push_str(&{value_expr}.to_string());\n"
+            ));
+        }
+        ValueType::Primitive(PrimitiveType::Bool) => {
+            let deref = if guarded { "*" } else { "" };
+            out.push_str(&format!(
+                "{indent}out.push_str(if {deref}{value_expr} {{ \"true\" }} else {{ \"false\" }});\n"
+            ));
+        }
+        ValueType::Primitive(_) => {
+            let amp = if guarded { "" } else { "&" };
+            out.push_str(&format!("{indent}out.push_str({amp}{value_expr});\n"));
+        }
+        ValueType::Imported(imp) => {
+            let prefix = naming::imported_module_prefix(&module.namespace, &imp.namespace);
+            let amp = if guarded { "" } else { "&" };
+            out.push_str(&format!(
+                "{indent}{prefix}Render::render_into({amp}{value_expr}, out);\n"
+            ));
+        }
+        _ => {
+            out.push_str(&format!("{indent}{value_expr}.render_into(out);\n"));
+        }
+    }
+}
+
 fn emit_budget_node(
     node: &RenderNode,
     pt: &PhenotypeType,
@@ -322,8 +367,18 @@ fn emit_budget_node(
                     "{indent}    if __spans[{i}].is_none() {{ __spans[{i}] = Some(__start..out.len()); }}\n"
                 ));
             } else {
-                // volatile/segment-only: plain write of the value.
-                out.push_str(&format!("{indent}    out.push_str(&{value_expr});\n"));
+                // volatile/segment-only: write the value exactly as the
+                // standard emitter would (PHT-0029 — `push_str` is only
+                // right for strings, and a guarded binding is already a
+                // reference).
+                emit_plain_value_write(
+                    &f.ty,
+                    &value_expr,
+                    guard == Some(*id),
+                    module,
+                    out,
+                    &format!("{indent}    "),
+                );
             }
             if let Some(name) = plan.segments.get(id) {
                 let escaped = name.replace('\\', "\\\\").replace('"', "\\\"");
